@@ -6,27 +6,18 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import MiniAttendance from "../Components/MiniAttendance/MiniAttendance";
 import { fetchAttendanceForStudent, fetchStudentDoc, fetchUser } from "../Service/functions";
 
-// Define the attendance record type
-type StatusType = "Present" | "Absent" | "Halfday";
+type StatusType = "Present" | "Absent" | "Halfday" | "Not Marked";
 
 interface AttendanceRecord {
   id: string;
   date: string;
   status: StatusType;
-  // Optional morning/afternoon if you want to track half-day sessions
-  morning?: boolean;
-  afternoon?: boolean;
-}
-
-// Props for MiniAttendance component
-interface MiniAttendanceProps {
-  records: AttendanceRecord[];
-  onPressSeeAll: () => void;
 }
 
 const Attendance: React.FC = () => {
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [studentClass, setStudentClass] = useState<string>("");
 
   useEffect(() => {
     const loadAttendance = async () => {
@@ -38,18 +29,14 @@ const Attendance: React.FC = () => {
         const student = await fetchStudentDoc(user);
         if (!student?.id || !student?.studentClass) return;
 
+        setStudentClass(student.studentClass);
+
         const records = await fetchAttendanceForStudent(student.id, student.studentClass);
 
-        // Map the status to match union type and include optional morning/afternoon
-        const formatted: AttendanceRecord[] = records.map((r) => ({
+        const formatted: AttendanceRecord[] = records.map((r: any) => ({
           id: r.id,
           date: r.date,
-          morning: r.morning,
-          afternoon: r.afternoon,
-          status:
-            r.status === "Present" || r.status === "Absent" || r.status === "Halfday"
-              ? r.status
-              : "Absent", // fallback
+          status: r.status ?? "Not Marked",
         }));
 
         setAttendanceData(formatted);
@@ -72,25 +59,37 @@ const Attendance: React.FC = () => {
 
   return (
     <ScrollView style={{ flex: 1, padding: 16 }}>
-      {/* Pass correct prop 'records' to MiniAttendance */}
-      <MiniAttendance
-        records={attendanceData}
-        onPressSeeAll={() => {
-          console.log("See all pressed");
-        }}
-      />
+      {/* Correct MiniAttendance usage */}
+      {studentClass !== "" && <MiniAttendance studentClass={studentClass} />}
 
       <Text style={styles.headerText}>All Records</Text>
+
       <FlatList
         data={attendanceData.sort((a, b) => dayjs(b.date).diff(dayjs(a.date)))}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.recordRow}>
-            <Text style={styles.dateText}>{dayjs(item.date).format("DD MMM YYYY")}</Text>
-            <View style={[styles.statusBox, { backgroundColor: getStatusColor(item.status) + "22" }]}>
-              <Icon name={getStatusIcon(item.status)} size={20} color={getStatusColor(item.status)} />
-              <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                {item.status === "Halfday" ? "Half Day" : item.status}
+            <Text style={styles.dateText}>
+              {dayjs(item.date).format("DD MMM YYYY")}
+            </Text>
+            <View
+              style={[
+                styles.statusBox,
+                { backgroundColor: getStatusColor(item.status) + "22" },
+              ]}
+            >
+              <Icon
+                name={getStatusIcon(item.status)}
+                size={20}
+                color={getStatusColor(item.status)}
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: getStatusColor(item.status) },
+                ]}
+              >
+                {item.status}
               </Text>
             </View>
           </View>
@@ -100,7 +99,7 @@ const Attendance: React.FC = () => {
   );
 };
 
-const getStatusColor = (status: StatusType | string) => {
+const getStatusColor = (status: StatusType) => {
   switch (status) {
     case "Present":
       return "#4CAF50";
@@ -113,7 +112,7 @@ const getStatusColor = (status: StatusType | string) => {
   }
 };
 
-const getStatusIcon = (status: StatusType | string) => {
+const getStatusIcon = (status: StatusType) => {
   switch (status) {
     case "Present":
       return "check-circle";
