@@ -515,37 +515,6 @@ const Gallery: React.FC = () => {
           </View>
         ) : (
           <>
-            <View style={styles.viewModeContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.viewModeButton,
-                  viewMode === 'list' && styles.viewModeButtonActive
-                ]}
-                onPress={() => setViewMode('list')}
-              >
-                <Text style={[
-                  styles.viewModeIcon,
-                  viewMode === 'list' && styles.viewModeIconActive
-                ]}>
-                  ☰
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.viewModeButton,
-                  viewMode === 'grid' && styles.viewModeButtonActive
-                ]}
-                onPress={() => setViewMode('grid')}
-              >
-                <Text style={[
-                  styles.viewModeIcon,
-                  viewMode === 'grid' && styles.viewModeIconActive
-                ]}>
-                  ⏹️
-                </Text>
-              </TouchableOpacity>
-            </View>
-
             <FlatList
               data={posts}
               renderItem={renderPost}

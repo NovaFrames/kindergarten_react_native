@@ -17,7 +17,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Announcement, fetchAllAnnouncements } from '../Service/functions';
-import { format, isSameDay, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { format, isSameDay, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -33,33 +33,71 @@ const AnnouncementScreen: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [eventTypes, setEventTypes] = useState<string[]>([]);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const loadAnnouncements = useCallback(async (isRefreshing = false) => {
     try {
       if (!isRefreshing) setLoading(true);
       setRefreshing(isRefreshing);
+      setDebugInfo('Loading announcements...');
 
       const announcements = await fetchAllAnnouncements();
+      setDebugInfo(`Fetched ${announcements.length} announcements`);
+      
+      if (announcements.length === 0) {
+        setDebugInfo('No announcements found in database');
+      } else {
+        // Log first few announcements to check structure
+        announcements.slice(0, 3).forEach((ann, index) => {
+        });
+      }
       
       // Extract unique event types
       const uniqueEventTypes = Array.from(
         new Set(announcements.filter(a => a.eventType).map(a => a.eventType!))
       );
       setEventTypes(uniqueEventTypes);
+      setDebugInfo(prev => prev + `\nFound ${uniqueEventTypes.length} event types`);
       
-      // Sort by date (newest first)
+      // Sort by date (newest first) with better date handling
       const sortedAnnouncements = announcements.sort((a, b) => {
-        const dateA = a.createdAt?.toDate?.() || new Date(a.startDate);
-        const dateB = b.createdAt?.toDate?.() || new Date(b.startDate);
-        return dateB.getTime() - dateA.getTime();
+        try {
+          // Handle createdAt date (could be Firestore Timestamp or string)
+          let dateA: Date;
+          let dateB: Date;
+          
+          if (a.createdAt && typeof a.createdAt.toDate === 'function') {
+            dateA = a.createdAt.toDate(); // Firestore Timestamp
+          } else if (a.createdAt) {
+            dateA = new Date(a.createdAt); // String or Date
+          } else {
+            dateA = new Date(a.startDate);
+          }
+          
+          if (b.createdAt && typeof b.createdAt.toDate === 'function') {
+            dateB = b.createdAt.toDate();
+          } else if (b.createdAt) {
+            dateB = new Date(b.createdAt);
+          } else {
+            dateB = new Date(b.startDate);
+          }
+          
+          return dateB.getTime() - dateA.getTime();
+        } catch (error) {
+          console.error('Error sorting announcements:', error);
+          return 0;
+        }
       });
       
       setAllAnnouncements(sortedAnnouncements);
       setFilteredAnnouncements(sortedAnnouncements);
       
-    } catch (error) {
+      setDebugInfo(prev => prev + `\nSorted and set ${sortedAnnouncements.length} announcements`);
+      
+    } catch (error: any) {
       console.error('Error loading announcements:', error);
-      Alert.alert('Error', 'Failed to load announcements');
+      setDebugInfo(`Error: ${error.message}`);
+      Alert.alert('Error', 'Failed to load announcements. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,56 +106,85 @@ const AnnouncementScreen: React.FC = () => {
 
   const applyFilters = useCallback(() => {
     let filtered = [...allAnnouncements];
+    setDebugInfo(`Applying filters to ${filtered.length} announcements`);
 
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(ann =>
-        ann.title?.toLowerCase().includes(query) ||
-        ann.description?.toLowerCase().includes(query) ||
-        ann.eventType?.toLowerCase().includes(query) ||
-        ann.venue?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(ann => {
+        const titleMatch = ann.title?.toLowerCase().includes(query);
+        const descMatch = ann.description?.toLowerCase().includes(query);
+        const eventMatch = ann.eventType?.toLowerCase().includes(query);
+        const venueMatch = ann.venue?.toLowerCase().includes(query);
+        return titleMatch || descMatch || eventMatch || venueMatch;
+      });
+      setDebugInfo(prev => prev + `\nAfter search: ${filtered.length} announcements`);
     }
 
     // Apply time filter
     const now = new Date();
     switch (selectedFilter) {
       case 'today':
-        filtered = filtered.filter(ann => 
-          isSameDay(new Date(ann.startDate), now)
-        );
+        filtered = filtered.filter(ann => {
+          try {
+            return isSameDay(new Date(ann.startDate), now);
+          } catch {
+            return false;
+          }
+        });
+        setDebugInfo(prev => prev + `\nAfter today filter: ${filtered.length} announcements`);
         break;
       case 'thisWeek':
         const weekStart = startOfWeek(now);
         const weekEnd = endOfWeek(now);
         filtered = filtered.filter(ann => {
-          const annDate = new Date(ann.startDate);
-          return isWithinInterval(annDate, { start: weekStart, end: weekEnd });
+          try {
+            const annDate = new Date(ann.startDate);
+            return isWithinInterval(annDate, { start: weekStart, end: weekEnd });
+          } catch {
+            return false;
+          }
         });
+        setDebugInfo(prev => prev + `\nAfter thisWeek filter: ${filtered.length} announcements`);
         break;
       case 'upcoming':
-        filtered = filtered.filter(ann => 
-          new Date(ann.startDate) > now
-        );
+        filtered = filtered.filter(ann => {
+          try {
+            return new Date(ann.startDate) > now;
+          } catch {
+            return false;
+          }
+        });
+        setDebugInfo(prev => prev + `\nAfter upcoming filter: ${filtered.length} announcements`);
         break;
       case 'past':
-        filtered = filtered.filter(ann => 
-          new Date(ann.startDate) < now
-        );
+        filtered = filtered.filter(ann => {
+          try {
+            return new Date(ann.startDate) < now;
+          } catch {
+            return false;
+          }
+        });
+        setDebugInfo(prev => prev + `\nAfter past filter: ${filtered.length} announcements`);
         break;
     }
 
     // Apply event type filter
     if (selectedEventType) {
       filtered = filtered.filter(ann => ann.eventType === selectedEventType);
+      setDebugInfo(prev => prev + `\nAfter event type filter: ${filtered.length} announcements`);
     }
 
     // Apply date filter
     if (dateFilter) {
-      filtered = filtered.filter(ann =>
-        isSameDay(new Date(ann.startDate), dateFilter)
-      );
+      filtered = filtered.filter(ann => {
+        try {
+          return isSameDay(new Date(ann.startDate), dateFilter);
+        } catch {
+          return false;
+        }
+      });
+      setDebugInfo(prev => prev + `\nAfter date filter: ${filtered.length} announcements`);
     }
 
     setFilteredAnnouncements(filtered);
@@ -146,6 +213,7 @@ const AnnouncementScreen: React.FC = () => {
     setSelectedEventType('');
     setDateFilter(null);
     setFilteredAnnouncements(allAnnouncements);
+    setDebugInfo('Filters cleared');
   };
 
   const getEventTypeColor = (eventType: string) => {
@@ -166,11 +234,29 @@ const AnnouncementScreen: React.FC = () => {
   };
 
   const formatDateRange = (startDate: string, endDate: string) => {
-    const start = format(new Date(startDate), 'MMM dd');
-    const end = format(new Date(endDate), 'MMM dd');
-    
-    if (start === end) return start;
-    return `${start} - ${end}`;
+    try {
+      const start = format(new Date(startDate), 'MMM dd');
+      const end = format(new Date(endDate), 'MMM dd');
+      
+      if (start === end) return start;
+      return `${start} - ${end}`;
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const getAnnouncementDate = (ann: Announcement): Date => {
+    try {
+      if (ann.createdAt && typeof ann.createdAt.toDate === 'function') {
+        return ann.createdAt.toDate();
+      } else if (ann.createdAt) {
+        return new Date(ann.createdAt);
+      } else {
+        return new Date(ann.startDate);
+      }
+    } catch {
+      return new Date();
+    }
   };
 
   const renderAnnouncementItem = ({ item }: { item: Announcement }) => {
@@ -185,13 +271,13 @@ const AnnouncementScreen: React.FC = () => {
           isUpcoming && styles.upcomingAnnouncementCard
         ]}
         onPress={() => {
-          // Navigate to announcement detail or show modal
           Alert.alert(
-            item.title,
+            item.title || 'No Title',
             `${item.description || 'No description provided'}\n\n` +
             `📅 ${formatDateRange(item.startDate, item.endDate)}\n` +
             `⏰ ${item.startTime}${item.endTime ? ` - ${item.endTime}` : ''}\n` +
-            `📍 ${item.venue || 'TBA'}`,
+            `📍 ${item.venue || 'TBA'}` +
+            (item.eventType ? `\n\n📝 ${item.eventType}` : ''),
             [{ text: 'OK' }]
           );
         }}
@@ -200,7 +286,7 @@ const AnnouncementScreen: React.FC = () => {
         <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>
             <Text style={styles.titleText} numberOfLines={2}>
-              {item.title}
+              {item.title || 'Untitled Announcement'}
             </Text>
             
             <View style={styles.statusContainer}>
@@ -250,7 +336,7 @@ const AnnouncementScreen: React.FC = () => {
             <View style={styles.footerItem}>
               <Icon name="schedule" size={16} color="#6c757d" />
               <Text style={styles.footerText}>
-                {item.startTime}
+                {item.startTime || 'All day'}
                 {item.endTime && ` - ${item.endTime}`}
               </Text>
             </View>
@@ -269,7 +355,7 @@ const AnnouncementScreen: React.FC = () => {
             <View style={styles.createdAtContainer}>
               <Icon name="access-time" size={14} color="#adb5bd" />
               <Text style={styles.createdAtText}>
-                Posted {format(item.createdAt.toDate(), 'MMM dd, hh:mm a')}
+                Posted {format(getAnnouncementDate(item), 'MMM dd, hh:mm a')}
               </Text>
             </View>
           )}
@@ -395,6 +481,9 @@ const AnnouncementScreen: React.FC = () => {
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
         <Text style={styles.loadingText}>Loading announcements...</Text>
+        {__DEV__ && debugInfo ? (
+          <Text style={styles.debugText}>{debugInfo}</Text>
+        ) : null}
       </SafeAreaView>
     );
   }
@@ -435,7 +524,7 @@ const AnnouncementScreen: React.FC = () => {
       <FlatList
         data={filteredAnnouncements}
         renderItem={renderAnnouncementItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id || Math.random().toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -468,6 +557,14 @@ const AnnouncementScreen: React.FC = () => {
               <Icon name="refresh" size={20} color="#007AFF" />
               <Text style={styles.refreshButtonText}>Refresh</Text>
             </TouchableOpacity>
+            {__DEV__ && debugInfo ? (
+              <View style={styles.debugContainer}>
+                <Text style={styles.debugTitle}>Debug Info:</Text>
+                <ScrollView style={styles.debugScroll}>
+                  <Text style={styles.debugText}>{debugInfo}</Text>
+                </ScrollView>
+              </View>
+            ) : null}
           </View>
         }
         ListHeaderComponent={
@@ -484,7 +581,7 @@ const AnnouncementScreen: React.FC = () => {
                 : selectedEventType
                 ? `${selectedEventType} Announcements`
                 : dateFilter
-                ? `Announcements for ${format(dateFilter, 'MMM dd, yyyy')}`
+                ? `Announcements for ${dateFilter ? format(dateFilter, 'MMM dd, yyyy') : ''}`
                 : 'All Announcements'}
             </Text>
           ) : null
@@ -697,11 +794,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
+    padding: 20,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
     color: '#6c757d',
+  },
+  debugText: {
+    marginTop: 12,
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+  },
+  debugContainer: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    width: '100%',
+    maxHeight: 150,
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginBottom: 8,
+  },
+  debugScroll: {
+    maxHeight: 100,
   },
   emptyContainer: {
     flex: 1,
@@ -741,7 +863,7 @@ const styles = StyleSheet.create({
   refreshButtonText: {
     color: '#007AFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600', 
     marginLeft: 8,
   },
   modalOverlay: {

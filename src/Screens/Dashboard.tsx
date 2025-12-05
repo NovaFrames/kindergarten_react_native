@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     paddingHorizontal: 4,
+    marginTop: 36,
   },
   welcomeText: {
     fontSize: 28,
