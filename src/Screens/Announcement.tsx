@@ -12,6 +12,8 @@ import {
 import dayjs from "dayjs";
 import { fetchAllAnnouncements } from "../Service/functions";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import ScreenHeader from "../Components/ScreenHeader";
+import HeaderNotificationButton from "../Components/HeaderNotificationButton";
 
 interface Announcement {
   id: string;
@@ -224,10 +226,13 @@ const Announcements: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header matching Attendance page */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Announcements</Text>
-      </View>
+      <ScreenHeader
+        title="Announcements"
+        subtitle="Stay informed about the latest updates from school."
+        iconName="campaign"
+        iconColor="#9C27B0"
+        actions={<HeaderNotificationButton />}
+      />
 
       {/* Tab Container */}
       <View style={styles.tabContainer}>
@@ -305,19 +310,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
-  },
-
-  // Header matching Attendance page
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "#2196F3",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
   },
 
   // Tab Container

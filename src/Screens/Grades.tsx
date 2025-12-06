@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { fetchGrades } from '../Service/functions';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import ScreenHeader from '../Components/ScreenHeader';
+import HeaderNotificationButton from '../Components/HeaderNotificationButton';
 
 const Grades: React.FC = () => {
   const [grades, setGrades] = useState<any[]>([]);
@@ -166,10 +168,13 @@ const Grades: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header matching Attendance page */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Grades</Text>
-      </View>
+      <ScreenHeader
+        title="Grades"
+        subtitle="Review exam performance and subject-wise scores."
+        iconName="assessment"
+        iconColor="#2563EB"
+        actions={<HeaderNotificationButton />}
+      />
 
       {error ? (
         <View style={styles.errorContainer}>
@@ -342,19 +347,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
-  },
-
-  // Header matching Attendance page
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: '#2196F3',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
   },
 
   // Statistics

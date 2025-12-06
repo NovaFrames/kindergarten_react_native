@@ -4,7 +4,7 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  FlatList, 
+  ScrollView,
   TouchableOpacity,
   Alert,
   ActivityIndicator 
@@ -45,34 +45,29 @@ const MiniHomework: React.FC = () => {
 
   const renderHomeworkItem = ({ item }: { item: Homework }) => (
     <TouchableOpacity style={styles.homeworkCard}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.subjectText}>
-          {item.subject || 'General'}
-        </Text>
-        <Text style={styles.dateText}>
-          {format(new Date(item.date), 'hh:mm a')}
-        </Text>
+      <View style={styles.cardBadge}>
+        <Text style={styles.cardBadgeText}>{item.classId || 'Class'}</Text>
       </View>
-      
-      <View style={styles.detailsContainer}>
-        {Array.isArray(item.details) ? (
-          item.details.map((detail, index) => (
-            <Text key={index} style={styles.detailText}>
-              • {detail}
-            </Text>
-          ))
-        ) : (
-          <Text style={styles.detailText}>{item.details}</Text>
-        )}
-      </View>
-      
-      <View style={styles.footer}>
-        <Text style={styles.classText}>
-          Class: {item.classId || 'Unknown'}
-        </Text>
-        <Text style={styles.updatedText}>
-          Updated: {format(new Date(item.updatedAt), 'MMM dd')}
-        </Text>
+      <Text style={styles.subjectText}>
+        {item.subject || 'General'}
+      </Text>
+      <Text style={styles.descriptionText} numberOfLines={3}>
+        {Array.isArray(item.details) ? item.details.join(' • ') : item.details}
+      </Text>
+      <View style={styles.cardMeta}>
+        <View style={styles.metaItem}>
+          <Text style={styles.metaLabel}>Due</Text>
+          <Text style={styles.metaValue}>
+            {format(new Date(item.date || item.createdAt), 'hh:mm a')}
+          </Text>
+        </View>
+        <View style={styles.metaDivider} />
+        <View style={styles.metaItem}>
+          <Text style={styles.metaLabel}>Updated</Text>
+          <Text style={styles.metaValue}>
+            {format(new Date(item.updatedAt), 'MMM dd')}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -99,28 +94,39 @@ const MiniHomework: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Homework</Text>
-        <TouchableOpacity onPress={loadTodayHomework}>
-          <Text style={styles.refreshText}>Refresh</Text>
+      <View style={styles.summaryCard}>
+        <View>
+          <Text style={styles.summaryLabel}>Homework Today</Text>
+          <Text style={styles.summaryValue}>
+            {todayHomework.length}
+          </Text>
+          <Text style={styles.summarySubtext}>
+            {todayHomework.length > 0
+              ? 'Keep up with the latest assignments'
+              : 'All caught up for today'}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={loadTodayHomework}
+        >
+          <Text style={styles.refreshButtonText}>Refresh</Text>
         </TouchableOpacity>
       </View>
-      
+
       {todayHomework.length === 0 ? (
         renderEmptyState()
       ) : (
-        <FlatList
-          data={todayHomework}
-          renderItem={renderHomeworkItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
+        <ScrollView
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <Text style={styles.countText}>
-              {todayHomework.length} homework item{todayHomework.length !== 1 ? 's' : ''} for today
-            </Text>
-          }
-        />
+          contentContainerStyle={styles.listContainer}
+        >
+          {todayHomework.map(item => (
+            <View key={item.id}>
+              {renderHomeworkItem({ item })}
+            </View>
+          ))}
+        </ScrollView>
       )}
     </View>
   );
@@ -128,91 +134,100 @@ const MiniHomework: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    width: '100%',
   },
-  header: {
+  summaryCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1c1c1e',
-  },
-  refreshText: {
+  summaryLabel: {
+    color: '#CBD5F5',
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
+  },
+  summaryValue: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '700',
+    marginVertical: 4,
+  },
+  summarySubtext: {
+    color: '#E2E8F0',
+    fontSize: 13,
+  },
+  refreshButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  refreshButtonText: {
+    color: '#E2E8F0',
+    fontWeight: '600',
   },
   listContainer: {
-    paddingBottom: 20,
+    paddingTop: 16,
+    gap: 12,
   },
   homeworkCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#E5EAF0',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  cardBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginBottom: 12,
+  },
+  cardBadgeText: {
+    color: '#1D4ED8',
+    fontSize: 12,
+    fontWeight: '600',
   },
   subjectText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#2c3e50',
+    marginBottom: 8,
   },
-  dateText: {
-    fontSize: 13,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  detailsContainer: {
-    marginBottom: 12,
-  },
-  detailText: {
+  descriptionText: {
     fontSize: 14,
-    color: '#495057',
+    color: '#4B5563',
     lineHeight: 20,
-    marginBottom: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f3f4',
-  },
-  classText: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  updatedText: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontStyle: 'italic',
-  },
-  countText: {
-    fontSize: 14,
-    color: '#6c757d',
     marginBottom: 12,
-    textAlign: 'center',
+  },
+  cardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaItem: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginBottom: 2,
+  },
+  metaValue: {
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  metaDivider: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#E5EAF0',
+    marginHorizontal: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -229,22 +244,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    padding: 24,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    marginTop: 20,
+    borderColor: '#E5EAF0',
+    marginTop: 24,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
+    color: '#1E293B',
+    marginBottom: 6,
   },
   emptySubText: {
     fontSize: 14,
-    color: '#6c757d',
+    color: '#6B7280',
     textAlign: 'center',
   },
 });

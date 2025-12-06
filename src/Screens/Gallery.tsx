@@ -26,8 +26,10 @@ import {
   Comment as CommentType,
   fetchPosts as fetchPostsStatic
 } from '../Service/functions';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import ScreenHeader from '../Components/ScreenHeader';
+import HeaderNotificationButton from '../Components/HeaderNotificationButton';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,7 +44,6 @@ const Gallery: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
@@ -353,46 +354,6 @@ const Gallery: React.FC = () => {
     return !!post.likes[currentUser.uid];
   };
 
-  const renderStatistics = () => {
-    const totalLikes = posts.reduce((sum, post) => sum + getLikeCount(post), 0);
-    const totalImages = posts.reduce((sum, post) => {
-      const images = post.mediaUrls?.filter(media => media.type === 'image') || [];
-      return sum + images.length;
-    }, 0);
-    const totalVideos = posts.reduce((sum, post) => {
-      const videos = post.mediaUrls?.filter(media => media.type === 'video') || [];
-      return sum + videos.length;
-    }, 0);
-
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Icon name="collections" size={24} color="#2196F3" />
-          <Text style={styles.statNumber}>{posts.length}</Text>
-          <Text style={styles.statLabel}>Posts</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Icon name="favorite" size={24} color="#F44336" />
-          <Text style={styles.statNumber}>{totalLikes}</Text>
-          <Text style={styles.statLabel}>Likes</Text>
-        </View>
-        
-        <View style={styles.statItem}>
-          <Icon name="photo" size={24} color="#4CAF50" />
-          <Text style={styles.statNumber}>{totalImages}</Text>
-          <Text style={styles.statLabel}>Photos</Text>
-        </View>
-
-        <View style={styles.statItem}>
-          <Icon name="videocam" size={24} color="#FF9800" />
-          <Text style={styles.statNumber}>{totalVideos}</Text>
-          <Text style={styles.statLabel}>Videos</Text>
-        </View>
-      </View>
-    );
-  };
-
   const renderPost = ({ item: post }: { item: Post }) => {
     const teacherName = teacherNames[post.teacherId] || 'Teacher';
     const likeCount = getLikeCount(post);
@@ -504,61 +465,39 @@ const Gallery: React.FC = () => {
     );
   };
 
-  // Helper function for avatar colors
-  const getAvatarColor = (name: string) => {
-    const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#3F51B5', '#009688'];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
-  };
+  const todayPostCount = posts.filter(post => {
+    const createdAt = post.createdAt?.toDate ? post.createdAt.toDate() : new Date(post.createdAt || 0);
+    if (isNaN(createdAt.getTime())) {
+      return false;
+    }
+    return isToday(createdAt);
+  }).length;
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Loading gallery posts...</Text>
-      </View>
-    );
-  }
+  const renderSkeletonFeed = () => (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.skeletonContainer}
+    >
+      {[0, 1, 2].map((item) => (
+        <View key={item} style={styles.skeletonCard}>
+          <View style={styles.skeletonHeader}>
+            <View style={styles.skeletonAvatar} />
+            <View style={styles.skeletonHeaderText}>
+              <View style={styles.skeletonLineShort} />
+              <View style={styles.skeletonLineTiny} />
+            </View>
+          </View>
+          <View style={styles.skeletonLine} />
+          <View style={[styles.skeletonLine, styles.skeletonLineNarrow]} />
+          <View style={styles.skeletonMedia} />
+        </View>
+      ))}
+    </ScrollView>
+  );
 
-  return (
-    <View style={styles.container}>
-      {/* Header matching Attendance page */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Gallery</Text>
-      </View>
-
-      {/* View Mode Toggle */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'list' && styles.activeTab]}
-          onPress={() => setViewMode('list')}
-        >
-          <Icon 
-            name="view-agenda" 
-            size={20} 
-            color={viewMode === 'list' ? "#FFF" : "#666"} 
-          />
-          <Text style={[styles.tabText, viewMode === 'list' && styles.activeTabText]}>
-            List
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'grid' && styles.activeTab]}
-          onPress={() => setViewMode('grid')}
-        >
-          <Icon 
-            name="grid-view" 
-            size={20} 
-            color={viewMode === 'grid' ? "#FFF" : "#666"} 
-          />
-          <Text style={[styles.tabText, viewMode === 'grid' && styles.activeTabText]}>
-            Grid
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {error ? (
+  const renderFeedContent = () => {
+    if (error) {
+      return (
         <View style={styles.errorContainer}>
           <Icon name="error-outline" size={48} color="#F44336" />
           <Text style={styles.errorTitle}>Unable to Load Posts</Text>
@@ -581,7 +520,15 @@ const Gallery: React.FC = () => {
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      ) : posts.length === 0 ? (
+      );
+    }
+
+    if (loading) {
+      return renderSkeletonFeed();
+    }
+
+    if (posts.length === 0) {
+      return (
         <View style={styles.emptyContainer}>
           <Icon name="collections" size={64} color="#CCCCCC" />
           <Text style={styles.emptyTitle}>No Posts Yet</Text>
@@ -589,33 +536,54 @@ const Gallery: React.FC = () => {
             Posts from teachers will appear here when they share updates.
           </Text>
         </View>
-      ) : (
-        <View style={styles.contentContainer}>
-          {renderStatistics()}
-          
-          <FlatList
-            data={posts}
-            renderItem={renderPost}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.postsList}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={['#2196F3']}
-              />
-            }
-            ListFooterComponent={
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                  Showing {posts.length} post{posts.length !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            }
+      );
+    }
+
+    return (
+      <FlatList
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.postsList}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#2196F3']}
           />
-        </View>
-      )}
+        }
+        ListFooterComponent={
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Showing {posts.length} post{posts.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+        }
+      />
+    );
+  };
+
+  // Helper function for avatar colors
+  const getAvatarColor = (name: string) => {
+    const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#3F51B5', '#009688'];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScreenHeader
+        title="Classroom Moments"
+        subtitle="A curated feed of the latest photos and updates shared by teachers."
+        iconName="collections-bookmark"
+        iconColor="#1E3A8A"
+        actions={<HeaderNotificationButton count={todayPostCount} />}
+      />
+
+      <View style={styles.contentContainer}>
+        {renderFeedContent()}
+      </View>
 
       {/* Comment Modal */}
       <Modal
@@ -716,98 +684,62 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
-
-  // Header matching Attendance page
-  header: {
-    paddingTop: 50,
+  skeletonContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: '#2196F3',
+    paddingVertical: 20,
+    gap: 16,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-
-  // Tab Container
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 12,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#2196F3',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-    marginLeft: 8,
-  },
-  activeTabText: {
-    color: 'white',
-  },
-
-  // Statistics
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
+  skeletonCard: {
+    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    marginHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
   },
-  statItem: {
+  skeletonHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
+  },
+  skeletonAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E2E8F0',
+    marginRight: 12,
+  },
+  skeletonHeaderText: {
     flex: 1,
+    gap: 6,
   },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 8,
-    marginBottom: 4,
+  skeletonLine: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#E2E8F0',
+    marginBottom: 10,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
+  skeletonLineShort: {
+    width: '60%',
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#E2E8F0',
   },
-
-  // Loading State
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+  skeletonLineTiny: {
+    width: '30%',
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#EDF2F7',
   },
-  loadingText: {
-    marginTop: 8,
-    color: '#666',
-    fontSize: 16,
+  skeletonLineNarrow: {
+    width: '80%',
+  },
+  skeletonMedia: {
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: '#E5E7EB',
   },
 
   // Error State

@@ -19,6 +19,8 @@ import { Homework, fetchHomework, fetchUser } from '../Service/functions';
 import { format, isSameDay, parseISO, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import ScreenHeader from '../Components/ScreenHeader';
+import HeaderNotificationButton from '../Components/HeaderNotificationButton';
 
 const HomeworkScreen: React.FC = () => {
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
@@ -338,12 +340,35 @@ const HomeworkScreen: React.FC = () => {
     );
   }
 
+  const todayHomeworkCount = allHomework.filter(hw =>
+    isSameDay(new Date(hw.date || hw.createdAt), new Date())
+  ).length;
+
   return (
     <View style={styles.container}>
-      {/* Header matching Attendance page style */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Homework</Text>
-      </View>
+      <ScreenHeader
+        title="Homework"
+        subtitle="Stay updated with the latest assignments and reminders."
+        iconName="assignment"
+        iconColor="#2196F3"
+        actions={
+          <HeaderNotificationButton
+            count={todayHomeworkCount}
+            iconColor="#1E40AF"
+          />
+        }
+      >
+        <View style={styles.headerStats}>
+          <View style={styles.headerStatCard}>
+            <Text style={styles.headerStatLabel}>Total Tasks</Text>
+            <Text style={styles.headerStatValue}>{allHomework.length}</Text>
+          </View>
+          <View style={styles.headerStatCard}>
+            <Text style={styles.headerStatLabel}>Due Today</Text>
+            <Text style={styles.headerStatValue}>{todayHomeworkCount}</Text>
+          </View>
+        </View>
+      </ScreenHeader>
 
       {/* Search and Filter Bar */}
       <View style={styles.searchFilterContainer}>
@@ -455,17 +480,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Header matching Attendance page
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: '#2196F3',
+  headerStats: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  headerStatCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  headerStatLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  headerStatValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E3A8A',
   },
 
   // Search and Filter Section

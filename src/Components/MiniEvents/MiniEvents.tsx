@@ -117,14 +117,10 @@ const MiniEvents: React.FC<MiniEventsProps> = ({ onPress }) => {
 
   if (events.length === 0) {
     return (
-      <TouchableOpacity
-        style={[styles.container, styles.emptyContainer]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
+      <View style={styles.container}>
         <Text style={styles.emptyTitle}>No Upcoming Events</Text>
         <Text style={styles.emptySubtitle}>Check back soon for events</Text>
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -132,76 +128,46 @@ const MiniEvents: React.FC<MiniEventsProps> = ({ onPress }) => {
     <TouchableOpacity
       style={styles.container}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Upcoming Events</Text>
-        <Text style={styles.eventCount}>{events.length} upcoming</Text>
+      <View style={styles.summaryTag}>
+        <Text style={styles.summaryTagText}>Upcoming Events</Text>
+        <Text style={styles.summaryCount}>{events.length}</Text>
       </View>
-
-      <View style={styles.eventsList}>
-        {events.map((event, index) => (
-          <View
-            key={event.id}
-            style={[
-              styles.eventItem,
-              index < events.length - 1 && styles.eventItemBorder
-            ]}
-          >
-            <View style={styles.eventIconContainer}>
-              <Text style={styles.eventIcon}>
-                {getEventIcon(event.eventType)}
+      <View style={styles.eventsStack}>
+        {events.map((event) => (
+          <View key={event.id} style={styles.eventCard}>
+            <View style={styles.eventBadge}>
+              <Text style={[
+                styles.eventBadgeText,
+                { color: getEventColor(event.eventType) }
+              ]}>
+                {formatDate(event.startDate)}
+              </Text>
+              <Text style={styles.eventTime}>
+                {formatTime(event.startTime)}
               </Text>
             </View>
-
-            <View style={styles.eventDetails}>
-              <Text style={styles.eventTitle} numberOfLines={1}>
-                {event.title}
-              </Text>
-              <View style={styles.eventMeta}>
-                <View style={[styles.eventTypeBadge, { backgroundColor: getEventColor(event.eventType) }]}>
-                  <Text style={styles.eventTypeText}>
-                    {event.eventType}
-                  </Text>
-                </View>
-                <Text style={styles.eventDate}>
-                  {formatDate(event.startDate)}
-                </Text>
-              </View>
-              <View style={styles.eventTimeVenue}>
-                <Text style={styles.eventTime}>
-                  {formatTime(event.startTime)}
-                </Text>
-                <Text style={styles.eventVenue} numberOfLines={1}>
-                  • {event.venue}
-                </Text>
-              </View>
-            </View>
+            <Text style={styles.eventTitle} numberOfLines={1}>
+              {event.title}
+            </Text>
+            <Text style={styles.eventVenue} numberOfLines={1}>
+              {event.venue || 'School Campus'}
+            </Text>
           </View>
         ))}
       </View>
-
-      {events.length >= 2 && (
-        <View style={styles.footer}>
-          <Text style={styles.viewAllText}>View all events →</Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
     padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 12,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -252,98 +218,54 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
   },
-  header: {
+  summaryTag: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  eventCount: {
+  summaryTagText: {
     fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '600',
-  },
-  eventsList: {
-    marginBottom: 12,
-  },
-  eventItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  eventItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  eventIconContainer: {
-    marginRight: 12,
-  },
-  eventIcon: {
-    fontSize: 24,
-  },
-  eventDetails: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 6,
-  },
-  eventMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  eventTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  eventTypeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#ffffff',
+    color: '#6B7280',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
-  eventDate: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontWeight: '500',
+  summaryCount: {
+    fontSize: 14,
+    color: '#1D4ED8',
+    fontWeight: '600',
   },
-  eventTimeVenue: {
+  eventsStack: {
+    gap: 12,
+  },
+  eventCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    padding: 14,
+  },
+  eventBadge: {
     flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  eventBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   eventTime: {
-    fontSize: 13,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
   },
   eventVenue: {
     fontSize: 13,
-    color: '#6b7280',
-    flex: 1,
-    marginLeft: 4,
-  },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 12,
-    alignItems: 'center',
-  },
-  viewAllText: {
-    color: '#3b82f6',
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#6B7280',
   },
 });
 

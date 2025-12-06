@@ -6,6 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Image,
+  KeyboardAvoidingView,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../Service/firebase";
@@ -99,73 +103,191 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Parent Login</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#7a7a7a"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#7a7a7a"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <TouchableOpacity
-        style={styles.button}
-        disabled={loading}
-        onPress={handleLogin}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F2F7FD" />
+      <KeyboardAvoidingView
+        style={styles.safeArea}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Logging in..." : "Login"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.container}>
+          <View style={styles.brandContainer}>
+            <Image
+              style={styles.brandLogo}
+              source={require("../../assets/icon.png")}
+              resizeMode="contain"
+            />
+            <Text style={styles.brandTitle}>Project XXX</Text>
+            <Text style={styles.brandSubtitle}>
+              Welcome back! Please sign in to stay updated.
+            </Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Parent Login</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#A0AEC0"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <View style={styles.inputLabelRow}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <TouchableOpacity>
+                  <Text style={styles.forgotText}>Forgot?</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor="#A0AEC0"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              disabled={loading}
+              onPress={handleLogin}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? "Logging in..." : "Continue"}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.helperText}>
+              Having trouble signing in? Reach out to your class teacher.
+            </Text>
+          </View>
+
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>
+              Need help? Contact School
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F2F7FD",
+  },
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
+  brandContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  brandLogo: {
+    width: 80,
+    height: 80,
+    marginBottom: 12,
+  },
+  brandTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  brandSubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 18,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#475569",
+    marginBottom: 6,
+  },
+  inputLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  forgotText: {
+    fontSize: 13,
+    color: "#4C74FF",
+    fontWeight: "600",
   },
   input: {
-    width: "100%",
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 50,
-    marginBottom: 15,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    fontSize: 16,
+    color: "#0F172A",
+    backgroundColor: "#F8FAFC",
   },
   button: {
-    width: "100%",
-    backgroundColor: "#007aff",
-    height: 50,
+    backgroundColor: "#4C74FF",
+    height: 52,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 10,
+    marginTop: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
-    color: "white",
-    fontSize: 18,
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  helperText: {
+    marginTop: 16,
+    fontSize: 13,
+    color: "#94A3B8",
+    textAlign: "center",
+  },
+  secondaryButton: {
+    marginTop: 24,
+    alignSelf: "center",
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    color: "#1E40AF",
     fontWeight: "600",
   },
 });

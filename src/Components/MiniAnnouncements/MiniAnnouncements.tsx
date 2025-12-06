@@ -4,10 +4,10 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { format, isSameDay } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -80,74 +80,6 @@ const MiniAnnouncement: React.FC<MiniAnnouncementProps> = ({
     }
   };
 
-  const renderAnnouncementItem = ({ item }: { item: Announcement }) => (
-    <TouchableOpacity
-      style={styles.announcementCard}
-      onPress={() => onItemPress?.(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.announcementTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          {isToday(item.startDate) && (
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>TODAY</Text>
-            </View>
-          )}
-        </View>
-        
-        {item.eventType && (
-          <View style={[
-            styles.eventTypeBadge,
-            { backgroundColor: getEventTypeColor(item.eventType) + '20' }
-          ]}>
-            <Text style={[
-              styles.eventTypeText,
-              { color: getEventTypeColor(item.eventType) }
-            ]}>
-              {item.eventType}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {item.description && (
-        <Text style={styles.descriptionText} numberOfLines={2}>
-          {item.description}
-        </Text>
-      )}
-
-      <View style={styles.cardFooter}>
-        <View style={styles.footerItem}>
-          <Icon name="calendar-today" size={14} color="#6c757d" />
-          <Text style={styles.footerText}>
-            {formatDate(item.startDate)}
-            {item.endDate && item.endDate !== item.startDate && ` - ${formatDate(item.endDate)}`}
-          </Text>
-        </View>
-
-        <View style={styles.footerItem}>
-          <Icon name="schedule" size={14} color="#6c757d" />
-          <Text style={styles.footerText}>
-            {item.startTime}
-            {item.endTime && ` - ${item.endTime}`}
-          </Text>
-        </View>
-
-        {item.venue && (
-          <View style={styles.footerItem}>
-            <Icon name="location-on" size={14} color="#6c757d" />
-            <Text style={styles.footerText} numberOfLines={1}>
-              {item.venue}
-            </Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Icon name="notifications" size={48} color="#e0e0e0" />
@@ -163,17 +95,15 @@ const MiniAnnouncement: React.FC<MiniAnnouncementProps> = ({
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Announcements</Text>
-          {todayCount > 0 && (
-            <View style={styles.newBadge}>
-              <Text style={styles.newBadgeText}>{todayCount} NEW</Text>
-            </View>
-          )}
+        <View style={styles.summaryCard}>
+          <View>
+            <Text style={styles.summaryLabel}>Announcements</Text>
+            <Text style={styles.summaryValue}>--</Text>
+            <Text style={styles.summarySubtext}>Fetching latest updates...</Text>
+          </View>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading announcements...</Text>
         </View>
       </View>
     );
@@ -181,19 +111,22 @@ const MiniAnnouncement: React.FC<MiniAnnouncementProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Announcements</Text>
-          {todayCount > 0 && (
-            <View style={styles.newBadge}>
-              <Text style={styles.newBadgeText}>{todayCount} NEW</Text>
-            </View>
-          )}
+      <View style={styles.summaryCard}>
+        <View>
+          <Text style={styles.summaryLabel}>Announcements</Text>
+          <Text style={styles.summaryValue}>{announcements.length}</Text>
+          <Text style={styles.summarySubtext}>
+            {todayCount > 0
+              ? `${todayCount} new today`
+              : 'Nothing new today'}
+          </Text>
         </View>
-        
-        {onViewAllPress && announcements.length > 0 && (
-          <TouchableOpacity onPress={onViewAllPress}>
-            <Text style={styles.viewAllText}>View All</Text>
+        {onViewAllPress && (
+          <TouchableOpacity
+            style={styles.summaryButton}
+            onPress={onViewAllPress}
+          >
+            <Text style={styles.summaryButtonText}>View all</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -201,19 +134,69 @@ const MiniAnnouncement: React.FC<MiniAnnouncementProps> = ({
       {announcements.length === 0 ? (
         renderEmptyState()
       ) : (
-        <FlatList
-          data={announcements}
-          renderItem={renderAnnouncementItem}
-          keyExtractor={(item) => item.id}
+        <ScrollView
           scrollEnabled={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          ListHeaderComponent={
-            <Text style={styles.countText}>
-              {announcements.length} announcement{announcements.length !== 1 ? 's' : ''}
-              {todayCount > 0 && ` • ${todayCount} new today`}
-            </Text>
-          }
-        />
+          contentContainerStyle={styles.listContainer}
+        >
+          {announcements.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.announcementCard}
+              onPress={() => onItemPress?.(item)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.cardTopRow}>
+                <View>
+                  <Text style={styles.announcementTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.announcementDate}>
+                    {formatDate(item.startDate)}
+                    {item.endDate && item.endDate !== item.startDate
+                      ? ` - ${formatDate(item.endDate)}`
+                      : ''}
+                  </Text>
+                </View>
+                {isToday(item.startDate) && (
+                  <View style={styles.todayDot} />
+                )}
+              </View>
+
+              {item.description && (
+                <Text style={styles.descriptionText} numberOfLines={2}>
+                  {item.description}
+                </Text>
+              )}
+
+              <View style={styles.cardFooterRow}>
+                {item.eventType && (
+                  <View
+                    style={[
+                      styles.footerChip,
+                      {
+                        backgroundColor: getEventTypeColor(item.eventType) + '15',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.footerChipText,
+                        { color: getEventTypeColor(item.eventType) },
+                      ]}
+                    >
+                      {item.eventType}
+                    </Text>
+                  </View>
+                )}
+                {item.venue && (
+                  <Text style={styles.venueText} numberOfLines={1}>
+                    {item.venue}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       )}
     </View>
   );
@@ -221,67 +204,57 @@ const MiniAnnouncement: React.FC<MiniAnnouncementProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    width: '100%',
+    gap: 16,
   },
-  header: {
+  summaryCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1c1c1e',
-    marginRight: 8,
-  },
-  newBadge: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  newBadgeText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  viewAllText: {
+  summaryLabel: {
+    color: '#CBD5F5',
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
   },
-  countText: {
+  summaryValue: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '700',
+    marginVertical: 4,
+  },
+  summarySubtext: {
+    color: '#E2E8F0',
     fontSize: 13,
-    color: '#6c757d',
-    marginBottom: 12,
+  },
+  summaryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  summaryButtonText: {
+    color: '#E2E8F0',
+    fontWeight: '600',
+  },
+  listContainer: {
+    gap: 12,
   },
   announcementCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    padding: 16,
   },
-  cardHeader: {
+  cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  titleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
   },
   announcementTitle: {
     fontSize: 16,
@@ -289,52 +262,51 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     flex: 1,
   },
-  todayBadge: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  todayDot: {
+    width: 8,
+    height: 8,
     borderRadius: 4,
-    marginLeft: 6,
+    backgroundColor: '#22C55E',
+    marginLeft: 12,
   },
-  todayBadgeText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  eventTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  eventTypeText: {
-    fontSize: 11,
-    fontWeight: '600',
+  announcementDate: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
   },
   descriptionText: {
     fontSize: 14,
     color: '#495057',
     lineHeight: 20,
-    marginBottom: 12,
+    marginTop: 12,
   },
-  cardFooter: {
-    gap: 8,
-  },
-  footerItem: {
+  cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 12,
+    gap: 8,
   },
-  footerText: {
+  footerChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  footerChipText: {
     fontSize: 12,
-    color: '#6c757d',
-    marginLeft: 6,
-    flex: 1,
+    fontWeight: '600',
   },
-  separator: {
-    height: 8,
+  venueText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#475569',
+    textAlign: 'right',
   },
   emptyContainer: {
     alignItems: 'center',
     padding: 24,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    borderRadius: 18,
   },
   emptyText: {
     fontSize: 16,
@@ -351,11 +323,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     alignItems: 'center',
     padding: 20,
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#6c757d',
   },
 });
 

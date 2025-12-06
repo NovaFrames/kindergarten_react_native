@@ -4,11 +4,8 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   ActivityIndicator,
-  TouchableOpacity,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // <-- ADD THIS
 import { fetchUser, fetchAttendanceForStudent } from "../../Service/functions";
 import { format, eachDayOfInterval, startOfWeek, endOfWeek, isToday } from "date-fns";
 
@@ -23,8 +20,6 @@ interface MiniAttendanceProps {
 }
 
 const MiniAttendance: React.FC<MiniAttendanceProps> = ({ studentClass }) => {
-  const navigation = useNavigation(); // <-- ADD THIS
-
   const [attendanceData, setAttendanceData] = useState<StudentAttendance[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,54 +66,93 @@ const MiniAttendance: React.FC<MiniAttendanceProps> = ({ studentClass }) => {
   const countByStatus = (status: string) =>
     weekAttendance.filter((r) => r.status === status).length;
 
+  const statusColorMap: Record<string, string> = {
+    Present: "#22C55E",
+    Halfday: "#F97316",
+    Absent: "#EF4444",
+    "Not Marked": "#94A3B8",
+  };
+
+  const todayStatus =
+    weekAttendance.find((day) => day.isToday)?.status || "Not Marked";
+  const todayDateText = format(new Date(), "EEEE, MMM d");
+
   if (loading) return <ActivityIndicator size="large" style={{ marginTop: 20 }} />;
 
   return (
     <View style={styles.container}>
-      {/* HEADER WITH VIEW MORE BUTTON */}
-      <View style={styles.headerRow}>
-        <Text style={styles.header}>Attendance (This Week)</Text>
-
-        <TouchableOpacity onPress={() => navigation.navigate("Attendance" as never)}>
-          <Text style={styles.viewMore}>View More</Text>
-        </TouchableOpacity>
+      <View
+        style={[
+          styles.todayCard,
+          { borderColor: statusColorMap[todayStatus] || "#CBD5F5" },
+        ]}
+      >
+        <View>
+          <Text style={styles.todayLabel}>Today</Text>
+          <Text
+            style={[
+              styles.todayStatus,
+              { color: statusColorMap[todayStatus] || "#64748B" },
+            ]}
+          >
+            {todayStatus}
+          </Text>
+          <Text style={styles.todayDate}>{todayDateText}</Text>
+        </View>
+        <View style={styles.summaryChips}>
+          {[
+            { label: "Present", value: countByStatus("Present"), statusKey: "Present" },
+            { label: "Half Day", value: countByStatus("Halfday"), statusKey: "Halfday" },
+            { label: "Absent", value: countByStatus("Absent"), statusKey: "Absent" },
+          ].map((item) => (
+            <View key={item.label} style={styles.summaryChip}>
+              <View
+                style={[
+                  styles.summaryDot,
+                  { backgroundColor: statusColorMap[item.statusKey] },
+                ]}
+              />
+              <Text style={styles.summaryChipText}>
+                {item.value} {item.label}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
 
-      <View style={styles.summary}>
-        <Text style={[styles.summaryText, { color: "green" }]}>
-          Present: {countByStatus("Present")}
-        </Text>
-        <Text style={[styles.summaryText, { color: "orange" }]}>
-          Half Day: {countByStatus("Halfday")}
-        </Text>
-        <Text style={[styles.summaryText, { color: "red" }]}>
-          Absent: {countByStatus("Absent")}
-        </Text>
-      </View>
-
-      <FlatList
-        data={weekAttendance}
-        keyExtractor={(item) => item.date}
-        renderItem={({ item }) => (
-          <View style={[styles.row, item.isToday && styles.todayRow]}>
-            <Text style={styles.date}>{format(new Date(item.date), "EEE dd")}</Text>
+      <Text style={styles.weekLabel}>This Week</Text>
+      <View style={styles.timeline}>
+        {weekAttendance.map((item) => (
+          <View
+            key={item.date}
+            style={[
+              styles.dayCard,
+              item.isToday && styles.dayCardToday,
+              {
+                borderColor: statusColorMap[item.status] || "#E5EAF0",
+              },
+            ]}
+          >
             <Text
               style={[
-                styles.status,
-                item.status === "Present"
-                  ? { color: "green" }
-                  : item.status === "Halfday"
-                  ? { color: "orange" }
-                  : item.status === "Absent"
-                  ? { color: "red" }
-                  : { color: "#999" },
+                styles.dayLabel,
+                item.isToday && styles.dayLabelToday,
               ]}
             >
-              {item.status}
+              {format(new Date(item.date), "EEE")}
+            </Text>
+            <View
+              style={[
+                styles.statusIndicator,
+                { backgroundColor: statusColorMap[item.status] || "#E5EAF0" },
+              ]}
+            />
+            <Text style={styles.dayDate}>
+              {format(new Date(item.date), "dd")}
             </Text>
           </View>
-        )}
-      />
+        ))}
+      </View>
     </View>
   );
 };
@@ -128,36 +162,96 @@ export default MiniAttendance;
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#f8f9fa",
-    marginBottom: 20,
+    paddingVertical: 8,
   },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between", // <-- BUTTON RIGHT SIDE
-    alignItems: "center",
+  todayCard: {
+    backgroundColor: "#0F172A",
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
   },
-  header: { fontSize: 18, fontWeight: "700" },
-  viewMore: {
+  todayLabel: {
+    color: "#CBD5F5",
     fontSize: 14,
-    fontWeight: "600",
-    color: "#007AFF",
+    marginBottom: 4,
   },
-  summary: { flexDirection: "row", justifyContent: "space-between", marginVertical: 12 },
-  summaryText: { fontWeight: "600" },
-  row: {
+  todayStatus: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  todayDate: {
+    color: "#CBD5F5",
+    fontSize: 13,
+  },
+  summaryChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 14,
+    gap: 8,
+  },
+  summaryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  summaryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  summaryChipText: {
+    color: "#F8FAFC",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  weekLabel: {
+    marginTop: 16,
+    marginBottom: 10,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#0F172A",
+  },
+  timeline: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    gap: 10,
   },
-  todayRow: {
-    backgroundColor: "#e6f7ff",
-    borderRadius: 8,
+  dayCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
   },
-  date: { fontSize: 16 },
-  status: { fontWeight: "600", fontSize: 16 },
+  dayCardToday: {
+    backgroundColor: "#EEF2FF",
+  },
+  dayLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 8,
+  },
+  dayLabelToday: {
+    color: "#1D4ED8",
+    fontWeight: "600",
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  dayDate: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0F172A",
+  },
 });

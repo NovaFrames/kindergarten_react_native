@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { fetchUser } from "../Service/functions";
+import ScreenHeader from "../Components/ScreenHeader";
+import HeaderNotificationButton from "../Components/HeaderNotificationButton";
 
 interface Student {
   studentPersonalDetails: {
@@ -295,9 +297,13 @@ const Profile: React.FC = () => {
   if (!student) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
-        </View>
+        <ScreenHeader
+          title="Profile"
+          subtitle="View student details and contact information."
+          iconName="person"
+          iconColor="#2563EB"
+          actions={<HeaderNotificationButton />}
+        />
         <View style={styles.emptyContainer}>
           <Icon name="error-outline" size={64} color="#CCCCCC" />
           <Text style={styles.emptyTitle}>No Profile Data</Text>
@@ -313,10 +319,13 @@ const Profile: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header matching Attendance page */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+      <ScreenHeader
+        title="Profile"
+        subtitle="View student details and contact information."
+        iconName="person"
+        iconColor="#2563EB"
+        actions={<HeaderNotificationButton />}
+      />
 
       <ScrollView 
         style={styles.scrollView}
@@ -375,20 +384,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-
-  // Header matching Attendance page
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "#2196F3",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-  },
-
   // Loading State
   loadingContainer: {
     flex: 1,

@@ -19,6 +19,8 @@ import {
   fetchStudentDoc,
   fetchUser,
 } from "../Service/functions";
+import ScreenHeader from "../Components/ScreenHeader";
+import HeaderNotificationButton from "../Components/HeaderNotificationButton";
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isBetween);
@@ -599,9 +601,13 @@ const Attendance: React.FC = () => {
   if (errorMessage) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Attendance</Text>
-        </View>
+        <ScreenHeader
+          title="Attendance"
+          subtitle="Track daily and monthly attendance records."
+          iconName="calendar-today"
+          iconColor="#2563EB"
+          actions={<HeaderNotificationButton />}
+        />
         <View style={styles.errorContainer}>
           <Icon name="alert-circle" size={48} color="#F44336" />
           <Text style={styles.errorTitle}>Unable to Load Attendance</Text>
@@ -649,9 +655,13 @@ const Attendance: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Attendance</Text>
-      </View>
+      <ScreenHeader
+        title="Attendance"
+        subtitle="Track daily and monthly attendance records."
+        iconName="calendar-today"
+        iconColor="#2563EB"
+        actions={<HeaderNotificationButton />}
+      />
 
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -726,17 +736,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
-  },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "#2196F3",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
   },
   loadingContainer: {
     flex: 1,

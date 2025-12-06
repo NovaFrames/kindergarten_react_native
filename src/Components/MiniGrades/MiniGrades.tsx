@@ -64,14 +64,9 @@ const MiniGrades: React.FC<MiniGradesProps> = ({ onPress }) => {
 
   if (loading) {
     return (
-      <TouchableOpacity 
-        style={[styles.container, styles.loadingContainer]} 
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
+      <View style={styles.container}>
         <ActivityIndicator size="small" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading grades...</Text>
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -126,55 +121,51 @@ const MiniGrades: React.FC<MiniGradesProps> = ({ onPress }) => {
     <TouchableOpacity 
       style={styles.container} 
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
       <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Latest Exam Result</Text>
-          <Text style={styles.subtitle}>{formattedDate}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerLabel}>Recent Exam Result</Text>
+          <Text style={styles.headerSubtext}>{formattedDate}</Text>
         </View>
-        <Text style={styles.examName}>{latestGrade.examName}</Text>
+        <View style={styles.headerBadge}>
+          <Text style={styles.headerBadgeText}>{latestGrade.examName}</Text>
+        </View>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.averageContainer}>
-          <Text style={styles.averageLabel}>Average</Text>
-          <View style={[
-            styles.averageCircle, 
-            { backgroundColor: getGradeColor(average) }
-          ]}>
-            <Text style={styles.averageValue}>{average}</Text>
-          </View>
-        </View>
+      <View style={styles.averageCard}>
+        <Text style={styles.averageLabel}>Average Score</Text>
+        <Text style={[
+          styles.averageValue,
+          { color: getGradeColor(average) }
+        ]}>
+          {average}
+        </Text>
+        <Text style={styles.averageSubtext}>Across {Object.keys(latestGrade.subjects).length} subjects</Text>
+      </View>
 
-        <View style={styles.subjectsContainer}>
-          <Text style={styles.subjectsTitle}>Top Subjects:</Text>
-          {Object.entries(latestGrade.subjects)
-            .slice(0, 3) // Show only top 3 subjects
-            .map(([subject, grade]: [string, any]) => (
-              <View key={subject} style={styles.subjectRow}>
-                <Text style={styles.subjectName} numberOfLines={1}>
-                  {subject}
-                </Text>
-                <Text style={[
-                  styles.subjectGrade,
-                  { color: getGradeColor(grade) }
-                ]}>
-                  {grade}
-                </Text>
+      <View style={styles.subjectList}>
+        {Object.entries(latestGrade.subjects)
+          .slice(0, 3)
+          .map(([subject, grade]: [string, any]) => (
+            <View key={subject} style={styles.subjectRow}>
+              <View>
+                <Text style={styles.subjectName}>{subject}</Text>
+                <Text style={styles.subjectSubtext}>Grade</Text>
               </View>
-            ))}
-          
-          {Object.keys(latestGrade.subjects).length > 3 && (
-            <Text style={styles.moreText}>
-              +{Object.keys(latestGrade.subjects).length - 3} more subjects
-            </Text>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.viewAllText}>View all results →</Text>
+              <Text style={[
+                styles.subjectGrade,
+                { color: getGradeColor(grade) }
+              ]}>
+                {grade}
+              </Text>
+            </View>
+          ))}
+        {Object.keys(latestGrade.subjects).length > 3 && (
+          <Text style={styles.moreText}>
+            +{Object.keys(latestGrade.subjects).length - 3} more subjects
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -182,16 +173,12 @@ const MiniGrades: React.FC<MiniGradesProps> = ({ onPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
     padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 14,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -243,104 +230,78 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   header: {
-    marginBottom: 16,
-  },
-  titleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 8,
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+  headerLeft: {
+    gap: 4,
   },
-  subtitle: {
+  headerLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  examName: {
-    fontSize: 16,
+  headerSubtext: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  headerBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#EEF2FF',
+  },
+  headerBadgeText: {
+    color: '#1D4ED8',
+    fontSize: 12,
     fontWeight: '600',
-    color: '#3b82f6',
   },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  averageContainer: {
-    alignItems: 'center',
-    marginRight: 24,
+  averageCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 18,
+    padding: 16,
   },
   averageLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  averageCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    color: '#CBD5F5',
+    fontSize: 13,
   },
   averageValue: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#22C55E',
+    marginVertical: 4,
   },
-  subjectsContainer: {
-    flex: 1,
+  averageSubtext: {
+    color: '#CBD5F5',
+    fontSize: 12,
   },
-  subjectsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+  subjectList: {
+    gap: 12,
   },
   subjectRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
   },
   subjectName: {
     fontSize: 14,
-    color: '#4b5563',
-    flex: 1,
-    marginRight: 8,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  subjectSubtext: {
+    fontSize: 12,
+    color: '#9CA3AF',
   },
   subjectGrade: {
-    fontSize: 14,
-    fontWeight: '600',
-    minWidth: 32,
-    textAlign: 'right',
+    fontSize: 18,
+    fontWeight: '700',
   },
   moreText: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 12,
-    alignItems: 'center',
-  },
-  viewAllText: {
-    color: '#3b82f6',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'right',
   },
 });
 

@@ -1,5 +1,5 @@
 // src/components/MiniGallery.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
-  Dimensions
+  Dimensions,
+  Animated
 } from 'react-native';
 import { fetchPosts, fetchTeacher, Post } from '../../Service/functions';
 
@@ -23,6 +24,7 @@ const MiniGallery: React.FC<MiniGalleryProps> = ({ onPress }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadLatestPost();
@@ -92,16 +94,22 @@ const MiniGallery: React.FC<MiniGalleryProps> = ({ onPress }) => {
     return Object.keys(latestPost.likes).length;
   };
 
+  useEffect(() => {
+    if (!loading && latestPost) {
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [loading, latestPost, fadeAnim]);
+
   if (loading) {
     return (
-      <TouchableOpacity
-        style={[styles.container, styles.loadingContainer]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
+      <View style={styles.container}>
         <ActivityIndicator size="small" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading post...</Text>
-      </TouchableOpacity>
+      </View>
     );
   }
 
@@ -137,247 +145,186 @@ const MiniGallery: React.FC<MiniGalleryProps> = ({ onPress }) => {
   const likeCount = getLikeCount();
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.9}
-    >
-      <View style={styles.header}>
-        <View style={styles.postInfo}>
-          <Text style={styles.postTitle}>Latest Post</Text>
-          <Text style={styles.postDate}>
-            {formatDate(latestPost.createdAt)}
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <TouchableOpacity
+        style={styles.touchWrapper}
+        onPress={onPress}
+        activeOpacity={0.9}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerLabel}>Latest Gallery Post</Text>
+            <Text style={styles.headerSubtext}>
+              {formatDate(latestPost.createdAt)}
+            </Text>
+          </View>
+        </View>
+
+        {firstImage && !imageError ? (
+          <View style={styles.mediaHero}>
+            <Image
+              source={{ uri: firstImage }}
+              style={styles.postImage}
+              onError={() => setImageError(true)}
+              resizeMode="cover"
+            />
+            <View style={styles.mediaMeta}>
+              <Text style={styles.mediaTitle} numberOfLines={1}>
+                {latestPost.title || 'Untitled Post'}
+              </Text>
+              <Text style={styles.mediaSubtitle} numberOfLines={2}>
+                {latestPost.description || latestPost.text || ''}
+              </Text>
+              <Text style={styles.mediaTeacher}>
+                by {teacherName || 'Teacher'}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.noMedia}>
+            <Text style={styles.noMediaIcon}>🗒️</Text>
+            <Text style={styles.noMediaText}>Text update</Text>
+          </View>
+        )}
+
+        <View style={styles.statsRow}>
+          <Text style={styles.statsText}>❤️ {likeCount}</Text>
+          <Text style={styles.statsText}>
+            💬 {latestPost.comments?.length || 0}
+          </Text>
+          <Text style={styles.statsText}>
+            📁 {latestPost.mediaUrls?.length || 0} media
           </Text>
         </View>
-        <View style={styles.teacherInfo}>
-          <Text style={styles.teacherText}>by {teacherName || 'Teacher'}</Text>
-        </View>
-      </View>
-
-      <View style={styles.postContent}>
-        <Text style={styles.postTitleText} numberOfLines={1}>
-          {latestPost.title || 'Untitled Post'}
-        </Text>
-        <Text style={styles.postDescription} numberOfLines={2}>
-          {latestPost.description || latestPost.text || ''}
-        </Text>
-      </View>
-
-      {firstImage && !imageError ? (
-        <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: firstImage }}
-            style={styles.postImage}
-            onError={() => setImageError(true)}
-            resizeMode="cover"
-          />
-          <View style={styles.imageOverlay}>
-            <Text style={styles.mediaCount}>
-              📸 {latestPost.mediaUrls.length} media
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.noImageContainer}>
-          <Text style={styles.noImageIcon}>📄</Text>
-          <Text style={styles.noImageText}>Text Post</Text>
-        </View>
-      )}
-
-      <View style={styles.footer}>
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>❤️</Text>
-            <Text style={styles.statCount}>{likeCount}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>💬</Text>
-            <Text style={styles.statCount}>
-              {latestPost.comments?.length || 0}
-            </Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#0F172A',
+    padding: 18,
+  },
+  touchWrapper: {
+    gap: 14,
   },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 200,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: '#6b7280',
-    fontSize: 14,
+    minHeight: 160,
   },
   errorContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 200,
+    minHeight: 160,
+    gap: 6,
   },
   errorText: {
     fontSize: 24,
-    marginBottom: 8,
+    color: '#F87171',
   },
   errorMessage: {
-    color: '#ef4444',
+    color: '#FCA5A5',
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 4,
   },
   retryText: {
-    color: '#3b82f6',
+    color: '#60A5FA',
     fontSize: 12,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 200,
+    minHeight: 160,
+    gap: 4,
   },
   emptyIcon: {
     fontSize: 32,
     marginBottom: 8,
+    color: '#E2E8F0',
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#E2E8F0',
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#94A3B8',
     textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  postInfo: {
-    flex: 1,
-  },
-  postTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  postDate: {
+  headerLabel: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#CBD5F5',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  teacherInfo: {
-    marginLeft: 8,
+  headerSubtext: {
+    fontSize: 12,
+    color: '#94A3B8',
   },
-  teacherText: {
-    fontSize: 13,
-    color: '#3b82f6',
-    fontWeight: '500',
-  },
-  postContent: {
-    marginBottom: 12,
-  },
-  postTitleText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  postDescription: {
-    fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
-  },
-  imageContainer: {
-    borderRadius: 12,
+  mediaHero: {
+    borderRadius: 18,
     overflow: 'hidden',
-    marginBottom: 12,
-    position: 'relative',
-    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   postImage: {
     width: '100%',
     height: 180,
-    borderRadius: 12,
   },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderTopLeftRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  mediaMeta: {
+    padding: 14,
+    backgroundColor: 'rgba(15,23,42,0.85)',
+    gap: 6,
   },
-  mediaCount: {
-    fontSize: 12,
-    color: '#ffffff',
-    fontWeight: '500',
+  mediaTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  noImageContainer: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  noImageIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  noImageText: {
+  mediaSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+    color: '#CBD5F5',
   },
-  footer: {
+  mediaTeacher: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  noMedia: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    padding: 24,
+    alignItems: 'center',
+  },
+  noMediaIcon: {
+    fontSize: 30,
+    marginBottom: 8,
+    color: '#E2E8F0',
+  },
+  noMediaText: {
+    fontSize: 14,
+    color: '#94A3B8',
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 12,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  statIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  statCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  viewAllText: {
-    color: '#3b82f6',
-    fontSize: 14,
-    fontWeight: '600',
+  statsText: {
+    fontSize: 13,
+    color: '#E2E8F0',
+    fontWeight: '500',
   },
 });
 

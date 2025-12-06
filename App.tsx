@@ -20,6 +20,7 @@ import BottomNavigation from "./src/Components/BottomNavigation";
 import Homework from "./src/Screens/HomeWork";
 
 const Stack = createNativeStackNavigator();
+const TAB_SCREENS = ['Dashboard', 'Gallery', 'Profile', 'Settings'];
 
 // Main Layout component that includes BottomNavigation
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -72,11 +73,11 @@ const App = () => {
   return (
     <PaperProvider>
       <NavigationContainer>
-        <Stack.Navigator 
-          screenOptions={{ 
+        <Stack.Navigator
+          screenOptions={({ route }) => ({
             headerShown: false,
-            animation: 'slide_from_right'
-          }}
+            animation: TAB_SCREENS.includes(route.name) ? 'none' : 'slide_from_right',
+          })}
         >
           {user ? (
             <>
