@@ -272,6 +272,50 @@ const Events: React.FC = () => {
     </View>
   );
 
+  const nextEvent = filteredEvents[0];
+
+  const renderHero = () => {
+    if (!nextEvent) {
+      return (
+        <View style={styles.heroCard}>
+          <Text style={styles.heroLabel}>Upcoming events</Text>
+          <Text style={styles.heroValue}>{filteredEvents.length}</Text>
+          <Text style={styles.heroSubtext}>
+            Events will appear here as soon as they are scheduled.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.heroCard}>
+        <View style={styles.heroTopRow}>
+          <Text style={styles.heroLabel}>Next event</Text>
+          <View
+            style={[
+              styles.heroBadge,
+              { backgroundColor: getEventColor(nextEvent.eventType) + '20' },
+            ]}
+          >
+            <Text
+              style={[
+                styles.heroBadgeText,
+                { color: getEventColor(nextEvent.eventType) },
+              ]}
+            >
+              {nextEvent.eventType}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.heroEventTitle}>{nextEvent.title}</Text>
+        <Text style={styles.heroEventMeta}>
+          {formatDate(nextEvent.startDate)} • {formatTime(nextEvent.startTime)}
+        </Text>
+        <Text style={styles.heroEventVenue}>{nextEvent.venue}</Text>
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -305,40 +349,55 @@ const Events: React.FC = () => {
         </View>
       ) : (
         <>
-          {/* Search and Filter Container */}
-          <View style={styles.searchFilterContainer}>
-            <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search events..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor="#999"
+          <ScrollView
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#2196F3']}
               />
+            }
+            showsVerticalScrollIndicator={false}
+          >
+            {renderHero()}
+
+            {/* Search and Filter */}
+            <View style={styles.searchRow}>
+              <View style={styles.searchContainer}>
+                <Icon name="search" size={20} color="#94A3B8" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search by title, venue, or type"
+                  placeholderTextColor="#94A3B8"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+
+              <View style={styles.segmentControl}>
+                {(['upcoming', 'all'] as const).map((tab) => (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[
+                      styles.segmentButton,
+                      activeTab === tab && styles.segmentButtonActive,
+                    ]}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        activeTab === tab && styles.segmentTextActive,
+                      ]}
+                    >
+                      {tab === 'upcoming' ? 'Upcoming' : 'All'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-            
-            {/* Tab Container */}
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
-                onPress={() => setActiveTab('upcoming')}
-              >
-                <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
-                  Upcoming
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-                onPress={() => setActiveTab('all')}
-              >
-                <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-                  All Events
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Category Filter */}
           {categories.length > 1 && (
@@ -372,33 +431,6 @@ const Events: React.FC = () => {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-            </View>
-          )}
-
-          {/* Statistics */}
-          {filteredEvents.length > 0 && (
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Icon name="event" size={24} color="#2196F3" />
-                <Text style={styles.statNumber}>{filteredEvents.length}</Text>
-                <Text style={styles.statLabel}>Total</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <Icon name="today" size={24} color="#4CAF50" />
-                <Text style={styles.statNumber}>
-                  {filteredEvents.filter(e => isToday(parseISO(e.startDate))).length}
-                </Text>
-                <Text style={styles.statLabel}>Today</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <Icon name="category" size={24} color="#FF9800" />
-                <Text style={styles.statNumber}>
-                  {Array.from(new Set(filteredEvents.map(e => e.eventType))).length}
-                </Text>
-                <Text style={styles.statLabel}>Types</Text>
-              </View>
             </View>
           )}
 
@@ -436,17 +468,11 @@ const Events: React.FC = () => {
                 renderSectionHeader={renderSectionHeader}
                 contentContainerStyle={styles.eventsList}
                 showsVerticalScrollIndicator={false}
-                refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onRefresh}
-                    colors={['#2196F3']}
-                  />
-                }
                 stickySectionHeadersEnabled={false}
               />
             )}
           </View>
+          </ScrollView>
         </>
       )}
     </View>
@@ -462,6 +488,13 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
 
   // Search and Filter Container
   searchFilterContainer: {
@@ -471,55 +504,47 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    flex: 1,
     height: 48,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchIcon: {
-    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
-    height: 48,
     fontSize: 16,
-    color: '#333',
+    color: '#111827',
+    marginLeft: 8,
   },
-
-  // Tab Container
-  tabContainer: {
+  searchRow: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    marginTop: 16,
   },
-  activeTab: {
-    backgroundColor: '#2196F3',
+  segmentControl: {
+    flexDirection: 'row',
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+    padding: 4,
   },
-  tabText: {
-    fontSize: 16,
+  segmentButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  segmentButtonActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  segmentText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#666',
+    color: '#475569',
   },
-  activeTabText: {
-    color: 'white',
+  segmentTextActive: {
+    color: '#111827',
   },
 
   // Categories Filter
@@ -535,52 +560,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E5EAF0',
     marginRight: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
   },
   categoryButtonActive: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   categoryText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: '#475569',
   },
   categoryTextActive: {
-    color: 'white',
+    color: '#FFFFFF',
   },
 
   // Statistics
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5EAF0',
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#0F172A',
     marginTop: 8,
     marginBottom: 4,
   },
@@ -802,6 +818,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  heroCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+  },
+  heroLabel: {
+    color: '#94A3B8',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  heroValue: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '700',
+    marginVertical: 6,
+  },
+  heroSubtext: {
+    color: '#CBD5F5',
+    fontSize: 14,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  heroBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heroBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroEventTitle: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  heroEventMeta: {
+    marginTop: 6,
+    color: '#CBD5F5',
+    fontSize: 14,
+  },
+  heroEventVenue: {
+    color: '#CBD5F5',
+    fontSize: 13,
+    marginTop: 2,
   },
 });
 

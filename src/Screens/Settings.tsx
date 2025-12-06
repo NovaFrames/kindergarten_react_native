@@ -8,10 +8,11 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/Ionicons";
 import { auth } from "../Service/firebase";
 import { sendPasswordResetEmail, signOut } from "firebase/auth";
+import ScreenHeader from "../Components/ScreenHeader";
+import HeaderNotificationButton from "../Components/HeaderNotificationButton";
 
 export default function SettingsScreen() {
   const [darkMode, setDarkMode] = useState(false);
@@ -43,66 +44,80 @@ export default function SettingsScreen() {
   };
 
   const SettingItem = ({ icon, title, subtitle, right, onPress }: any) => (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <View style={styles.row}>
-        <View style={styles.row}>
-          <Icon name={icon} size={24} color="#4f46e5" style={{ marginRight: 10 }} />
-          <View>
-            <Text style={styles.cardTitle}>{title}</Text>
-            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-          </View>
+    <TouchableOpacity style={styles.settingRow} onPress={onPress}>
+      <View style={styles.settingLeft}>
+        <View style={styles.iconChip}>
+          <Icon name={icon} size={18} color="#1D4ED8" />
         </View>
-        {right}
+        <View>
+          <Text style={styles.cardTitle}>{title}</Text>
+          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        </View>
       </View>
+      {right}
     </TouchableOpacity>
   );
 
   return (
-    <LinearGradient
-      colors={darkMode ? ["#0f172a", "#1e293b"] : ["#f8fafc", "#e2e8f0"]}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text style={styles.header}>Settings</Text>
-        <Text style={styles.emailText}>
-          {auth.currentUser?.email ?? "Manage your preferences"}
-        </Text>
+    <View style={styles.container}>
+      <ScreenHeader
+        title="Settings"
+        subtitle="Personalize your experience."
+        iconName="settings"
+        iconColor="#1D4ED8"
+        actions={<HeaderNotificationButton />}
+      />
 
-        {/* 🔐 Security */}
+      <ScrollView
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroCard}>
+          <Text style={styles.heroTitle}>Logged in as</Text>
+          <Text style={styles.heroEmail}>
+            {auth.currentUser?.email ?? "parent@example.com"}
+          </Text>
+          <Text style={styles.heroSubtext}>
+            Manage notifications, privacy, and school contacts from a single place.
+          </Text>
+        </View>
+
         <Text style={styles.sectionTitle}>Security</Text>
-        <SettingItem
-          icon="key-outline"
-          title="Reset Password"
-          subtitle="Send reset link to email"
-          right={<Icon name="chevron-forward" size={20} color="#6b7280" />}
-          onPress={handleResetPassword}
-        />
-        <SettingItem
-          icon="log-out-outline"
-          title="Logout"
-          subtitle="Sign out from your account"
-          right={<Icon name="chevron-forward" size={20} color="#ef4444" />}
-          onPress={handleLogout}
-        />
+        <View style={styles.sectionCard}>
+          <SettingItem
+            icon="key-outline"
+            title="Reset Password"
+            subtitle="Send reset link to email"
+            right={<Icon name="chevron-forward" size={20} color="#94A3B8" />}
+            onPress={handleResetPassword}
+          />
+          <SettingItem
+            icon="log-out-outline"
+            title="Logout"
+            subtitle="Sign out from your account"
+            right={<Icon name="chevron-forward" size={20} color="#ef4444" />}
+            onPress={handleLogout}
+          />
+        </View>
 
-        {/* 🎨 Preferences */}
         <Text style={styles.sectionTitle}>Preferences</Text>
-        <SettingItem
-          icon="moon-outline"
-          title="Dark Mode"
-          subtitle={darkMode ? "Enabled" : "Disabled"}
-          right={
-            <Switch
-              value={darkMode}
-              onValueChange={toggleTheme}
-              trackColor={{ true: "#4f46e5" }}
-            />
-          }
-        />
+        <View style={styles.sectionCard}>
+          <SettingItem
+            icon="moon-outline"
+            title="Dark Mode"
+            subtitle={darkMode ? "Enabled" : "Disabled"}
+            right={
+              <Switch
+                value={darkMode}
+                onValueChange={toggleTheme}
+                trackColor={{ true: "#4f46e5" }}
+              />
+            }
+          />
+        </View>
 
-        {/* 🏫 School Info */}
         <Text style={styles.sectionTitle}>School Info</Text>
-        <View style={styles.infoCard}>
+        <View style={styles.sectionCard}>
           <SettingItem
             icon="call-outline"
             title="Phone"
@@ -115,46 +130,94 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* 📱 About */}
         <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.infoCard}>
-          <Text style={styles.subtitle}>App Version</Text>
-          <Text style={styles.version}>1.0.0</Text>
+        <View style={styles.sectionCard}>
+          <View style={styles.aboutRow}>
+            <Text style={styles.cardTitle}>App Version</Text>
+            <Text style={styles.version}>1.0.0</Text>
+          </View>
         </View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  row: { flexDirection: "row", alignItems: "center" },
-  header: {
-    fontSize: 30,
-    fontWeight: "900",
-    marginBottom: 6,
-    color: "#3b82f6",
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+    marginBottom : 16
   },
-  emailText: { fontSize: 14, color: "#6b7280", marginBottom: 20 },
-  sectionTitle: {
-    fontSize: 16,
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  heroCard: {
+    backgroundColor: "#0F172A",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  heroTitle: {
+    color: "#94A3B8",
+    fontSize: 13,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  heroEmail: {
+    color: "#FFFFFF",
+    fontSize: 18,
     fontWeight: "700",
-    color: "#334155",
-    marginTop: 20,
+    marginTop: 6,
+  },
+  heroSubtext: {
+    marginTop: 8,
+    color: "#CBD5F5",
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#64748B",
+    marginTop: 14,
     marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
-  card: {
-    padding: 15,
-    backgroundColor: "rgba(255,255,255,0.7)",
-    borderRadius: 12,
-    marginBottom: 10,
+  sectionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E5EAF0",
   },
-  cardTitle: { fontSize: 15, fontWeight: "600", color: "#1f2937" },
-  subtitle: { fontSize: 13, color: "#6b7280" },
-  infoCard: {
-    backgroundColor: "rgba(255,255,255,0.7)",
-    padding: 15,
-    borderRadius: 12,
+  settingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  settingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  iconChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#EEF2FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  cardTitle: { fontSize: 15, fontWeight: "600", color: "#111827" },
+  subtitle: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  aboutRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   version: {
     fontSize: 18,
