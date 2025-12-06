@@ -320,7 +320,7 @@ const Dashboard = ({ navigation }: any) => {
         <MiniEvents/>
 
         {/* Latest Post */}
-        <View style={[styles.sectionHeaderRow, styles.latestPostHeader]}>
+        {/* <View style={[styles.sectionHeaderRow, styles.latestPostHeader]}>
           <View>
             <Text style={styles.sectionTitle}>Latest Posts</Text>
             <Text style={styles.sectionSubtext}>Memories captured this week</Text>
@@ -335,7 +335,7 @@ const Dashboard = ({ navigation }: any) => {
         </View>
         <View style={styles.latestPostContainer}>
           <MiniGallery/>
-        </View>
+        </View> */}
 
         {/* Footer Info */}
         <View style={styles.footer}>
