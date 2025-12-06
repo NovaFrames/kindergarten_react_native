@@ -100,7 +100,7 @@ const MiniHomework: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Today's Homework</Text>
+        <Text style={styles.title}>Homework</Text>
         <TouchableOpacity onPress={loadTodayHomework}>
           <Text style={styles.refreshText}>Refresh</Text>
         </TouchableOpacity>

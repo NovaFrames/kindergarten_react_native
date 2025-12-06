@@ -95,36 +95,6 @@ const Dashboard = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* Quick Stats Row */}
-      <View style={styles.statsRow}>
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('Attendance')}
-        >
-          <Icon name="calendar-today" size={24} color="#007AFF" />
-          <Text style={styles.statNumber}>100%</Text>
-          <Text style={styles.statLabel}>Attendance</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('Homework')}
-        >
-          <Icon name="assignment" size={24} color="#4CAF50" />
-          <Text style={styles.statNumber}>3</Text>
-          <Text style={styles.statLabel}>Homework</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => navigation.navigate('Announcement')}
-        >
-          <Icon name="notifications" size={24} color="#FF9800" />
-          <Text style={styles.statNumber}>{todayAnnouncementsCount}</Text>
-          <Text style={styles.statLabel}>New</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Quick Actions */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
