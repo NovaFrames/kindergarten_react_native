@@ -264,35 +264,44 @@ const Attendance: React.FC = () => {
   // Render today's attendance status
   const renderTodayStatus = () => {
     const status = todayAttendance?.status || "Not Marked";
+    const statusColor = getStatusColor(status);
     return (
-      <View style={styles.todayContainer}>
-        <Text style={styles.sectionTitle}>Today's Attendance</Text>
-        <View
-          style={[
-            styles.todayStatusBox,
-            {
-              backgroundColor: getStatusColor(status) + "15",
-            },
-          ]}
-        >
-          <View style={styles.todayStatusHeader}>
-            <Icon
-              name={getStatusIcon(status)}
-              size={28}
-              color={getStatusColor(status)}
-            />
-            <Text style={styles.todayDate}>
-              {dayjs().format("DD MMMM YYYY")}
+      <View style={styles.todayHero}>
+        <View style={styles.todayHeroHeader}>
+          <View>
+            <Text style={styles.heroLabel}>Today's status</Text>
+            <Text style={styles.heroDate}>{dayjs().format("dddd, MMM D")}</Text>
+          </View>
+          <View style={[styles.heroBadge, { borderColor: statusColor }]}>
+            <Text style={[styles.heroBadgeText, { color: statusColor }]}>
+              {status}
             </Text>
           </View>
-          <Text
-            style={[
-              styles.todayStatusText,
-              { color: getStatusColor(status) },
-            ]}
-          >
-            {status}
-          </Text>
+        </View>
+        <Text style={styles.heroStatusText}>
+          {status === "Not Marked"
+            ? "Awaiting attendance update"
+            : status === "Present"
+            ? "Great job staying consistent!"
+            : status === "Halfday"
+            ? "Half day marked. Please confirm with teacher if needed."
+            : "Marked absent. Reach out to the teacher if there’s an issue."}
+        </Text>
+        <View style={styles.heroChips}>
+          {[
+            { label: "Present", value: weekStats.present, color: "#4CAF50" },
+            { label: "Half Day", value: weekStats.halfday, color: "#FFC107" },
+            { label: "Absent", value: weekStats.absent, color: "#F44336" },
+          ].map((chip) => (
+            <View key={chip.label} style={styles.heroChip}>
+              <View
+                style={[styles.heroChipDot, { backgroundColor: chip.color }]}
+              />
+              <Text style={styles.heroChipText}>
+                {chip.value} {chip.label}
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
     );
@@ -303,74 +312,45 @@ const Attendance: React.FC = () => {
     <View style={styles.tabContent}>
       {renderTodayStatus()}
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#4CAF50" }]}>
-            {weekStats.present}
-          </Text>
-          <Text style={styles.statLabel}>Present</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#FFC107" }]}>
-            {weekStats.halfday}
-          </Text>
-          <Text style={styles.statLabel}>Half Day</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#F44336" }]}>
-            {weekStats.absent}
-          </Text>
-          <Text style={styles.statLabel}>Absent</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#2196F3" }]}>
-            {weekStats.total}
-          </Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>This Week</Text>
-      
-      {/* Week Table View */}
-      <View style={styles.weekTableContainer}>
-        {/* Table Header */}
-        <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderText}>Day</Text>
-          <Text style={styles.tableHeaderText}>Date</Text>
-          <Text style={styles.tableHeaderText}>Status</Text>
-        </View>
-        
-        {/* Table Rows */}
-        <FlatList
-          data={currentWeekData}
-          keyExtractor={(item) => item.date}
-          renderItem={({ item }) => (
-            <View style={[
-              styles.tableRow,
-              item.isToday && styles.todayRow
-            ]}>
-              <Text style={styles.tableCell}>{item.day}</Text>
-              <Text style={styles.tableCell}>
-                {dayjs(item.date).format("DD/MM")}
+      <Text style={styles.sectionHeading}>Week overview</Text>
+      <View style={styles.weekTimeline}>
+        {currentWeekData.map((day) => (
+          <View
+            key={day.date}
+            style={[
+              styles.timelineCard,
+              day.isToday && styles.timelineCardToday,
+            ]}
+          >
+            <Text
+              style={[
+                styles.timelineDay,
+                day.isToday && styles.timelineDayToday,
+              ]}
+            >
+              {day.day}
+            </Text>
+            <Text style={styles.timelineDate}>
+              {dayjs(day.date).format("DD MMM")}
+            </Text>
+            <View style={styles.timelineStatus}>
+              <View
+                style={[
+                  styles.timelineDot,
+                  { backgroundColor: getStatusColor(day.status) },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.timelineStatusText,
+                  { color: getStatusColor(day.status) },
+                ]}
+              >
+                {day.status}
               </Text>
-              <View style={styles.statusCell}>
-                <View
-                  style={[
-                    styles.statusIndicator,
-                    { backgroundColor: getStatusColor(item.status) }
-                  ]}
-                />
-                <Text style={[
-                  styles.statusText,
-                  { color: getStatusColor(item.status) }
-                ]}>
-                  {item.status}
-                </Text>
-              </View>
             </View>
-          )}
-        />
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -378,51 +358,38 @@ const Attendance: React.FC = () => {
   // Render month view
   const renderMonthView = () => (
     <View style={styles.tabContent}>
-      <View style={styles.filterContainer}>
+      <View style={styles.monthFilters}>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={styles.filterChip}
           onPress={() => setShowYearModal(true)}
         >
-          <Text style={styles.filterButtonText}>{selectedYear}</Text>
-          <Icon name="chevron-down" size={20} color="#666" />
+          <Text style={styles.filterChipText}>{selectedYear}</Text>
+          <Icon name="chevron-down" size={18} color="#1D4ED8" />
         </TouchableOpacity>
-
         <TouchableOpacity
-          style={styles.filterButton}
+          style={styles.filterChip}
           onPress={() => setShowMonthModal(true)}
         >
-          <Text style={styles.filterButtonText}>
+          <Text style={styles.filterChipText}>
             {dayjs().month(selectedMonth - 1).format("MMMM")}
           </Text>
-          <Icon name="chevron-down" size={20} color="#666" />
+          <Icon name="chevron-down" size={18} color="#1D4ED8" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#4CAF50" }]}>
-            {monthStats.present}
-          </Text>
-          <Text style={styles.statLabel}>Present</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#FFC107" }]}>
-            {monthStats.halfday}
-          </Text>
-          <Text style={styles.statLabel}>Half Day</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#F44336" }]}>
-            {monthStats.absent}
-          </Text>
-          <Text style={styles.statLabel}>Absent</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: "#2196F3" }]}>
-            {monthStats.total}
-          </Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
+      <View style={styles.monthSummaryRow}>
+        {[
+          { label: "Present", value: monthStats.present, color: "#4CAF50" },
+          { label: "Half Day", value: monthStats.halfday, color: "#FFC107" },
+          { label: "Absent", value: monthStats.absent, color: "#F44336" },
+        ].map((chip) => (
+          <View key={chip.label} style={styles.monthSummaryCard}>
+            <Text style={styles.monthSummaryValue}>{chip.value}</Text>
+            <Text style={[styles.monthSummaryLabel, { color: chip.color }]}>
+              {chip.label}
+            </Text>
+          </View>
+        ))}
       </View>
 
       <View style={styles.monthGrid}>
@@ -457,33 +424,23 @@ const Attendance: React.FC = () => {
                 { backgroundColor: getStatusColor(day.status) },
               ]}
             />
-            {day.status !== "Not Marked" && (
-              <Text
-                style={[
-                  styles.monthStatusText,
-                  { color: getStatusColor(day.status) },
-                ]}
-              >
-                {day.status.charAt(0)}
-              </Text>
-            )}
           </TouchableOpacity>
         ))}
       </View>
 
       <View style={styles.legendContainer}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: "#4CAF50" }]} />
-          <Text style={styles.legendText}>Present</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: "#FFC107" }]} />
-          <Text style={styles.legendText}>Half Day</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: "#F44336" }]} />
-          <Text style={styles.legendText}>Absent</Text>
-        </View>
+        {[
+          { label: "Present", color: "#4CAF50" },
+          { label: "Half Day", color: "#FFC107" },
+          { label: "Absent", color: "#F44336" },
+        ].map((item) => (
+          <View key={item.label} style={styles.legendItem}>
+            <View
+              style={[styles.legendDot, { backgroundColor: item.color }]}
+            />
+            <Text style={styles.legendText}>{item.label}</Text>
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -832,172 +789,185 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   tabContent: {
-    marginBottom: 24,
+    marginBottom: 32,
+    gap: 20,
   },
-  todayContainer: {
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 12,
-  },
-  todayStatusBox: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-  },
-  todayStatusHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  todayDate: {
+  sectionHeading: {
     fontSize: 16,
-    color: "#666",
-    marginLeft: 12,
-    flex: 1,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
-  todayStatusText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+  todayHero: {
+    backgroundColor: "#0F172A",
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
   },
-  statsContainer: {
+  todayHeroHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  statItem: {
     alignItems: "center",
   },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 4,
+  heroLabel: {
+    fontSize: 13,
+    color: "#CBD5F5",
+    letterSpacing: 0.5,
   },
-  statLabel: {
-    fontSize: 12,
-    color: "#666",
-  },
-  // Week Table Styles
-  weekTableContainer: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-    marginBottom: 8,
-  },
-  tableHeaderText: {
-    fontSize: 14,
+  heroDate: {
+    fontSize: 16,
+    color: "#E2E8F0",
     fontWeight: "600",
-    color: "#666",
-    flex: 1,
-    textAlign: "center",
   },
-  tableRow: {
+  heroBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heroBadgeText: {
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  heroStatusText: {
+    fontSize: 16,
+    color: "#E2E8F0",
+    lineHeight: 22,
+  },
+  heroChips: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    flexWrap: "wrap",
+    gap: 10,
   },
-  todayRow: {
-    backgroundColor: "#E3F2FD",
-    borderRadius: 8,
-    marginHorizontal: -4,
-    paddingHorizontal: 4,
-  },
-  tableCell: {
-    fontSize: 14,
-    color: "#333",
-    flex: 1,
-    textAlign: "center",
-  },
-  statusCell: {
+  heroChip: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
-  statusIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  heroChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     marginRight: 8,
   },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
+  heroChipText: {
+    color: "#F8FAFC",
+    fontSize: 13,
+    fontWeight: "600",
   },
-  filterContainer: {
+  weekTimeline: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
+    flexWrap: "wrap",
+    gap: 12,
   },
-  filterButton: {
+  timelineCard: {
+    flexBasis: "30%",
+    flexGrow: 1,
+    minWidth: 110,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5EAF0",
+    padding: 14,
+    backgroundColor: "#FFFFFF",
+    gap: 6,
+  },
+  timelineCardToday: {
+    borderColor: "#1D4ED8",
+    backgroundColor: "#EEF2FF",
+  },
+  timelineDay: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  timelineDayToday: {
+    color: "#1D4ED8",
+    fontWeight: "600",
+  },
+  timelineDate: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  timelineStatus: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    flex: 0.48,
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    marginTop: 4,
   },
-  filterButtonText: {
-    fontSize: 16,
+  timelineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  timelineStatusText: {
+    fontSize: 13,
     fontWeight: "600",
-    color: "#333",
+  },
+  monthFilters: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  filterChip: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#CBD5F5",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#FFFFFF",
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: "#1D4ED8",
+    fontWeight: "600",
   },
   monthGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5EAF0",
+  },
+  monthSummaryRow: {
+    flexDirection: "row",
+    gap: 12,
     marginTop: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+  },
+  monthSummaryCard: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5EAF0",
+  },
+  monthSummaryValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  monthSummaryLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 4,
   },
   monthDayHeader: {
     width: "14.28%",
     textAlign: "center",
     paddingVertical: 12,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#666",
+    color: "#94A3B8",
   },
   monthDayBox: {
     width: "14.28%",
@@ -1015,7 +985,7 @@ const styles = StyleSheet.create({
   monthDateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: "#111827",
     marginBottom: 4,
   },
   otherMonthText: {
@@ -1023,7 +993,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   todayDateText: {
-    color: "#2196F3",
+    color: "#1D4ED8",
   },
   monthStatusIndicator: {
     width: 6,
