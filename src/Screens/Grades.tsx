@@ -1,4 +1,3 @@
-// src/screens/Grades.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,10 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
-  StatusBar,
 } from 'react-native';
 import { fetchGrades } from '../Service/functions';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Grades: React.FC = () => {
   const [grades, setGrades] = useState<any[]>([]);
@@ -63,12 +61,13 @@ const Grades: React.FC = () => {
 
   const getGradeColor = (grade: string) => {
     const numGrade = parseFloat(grade);
-    if (isNaN(numGrade)) return '#6b7280';
+    if (isNaN(numGrade)) return '#666';
     
-    if (numGrade >= 90) return '#10b981';
-    if (numGrade >= 80) return '#3b82f6';
-    if (numGrade >= 70) return '#f59e0b';
-    return '#ef4444';
+    if (numGrade >= 90) return '#4CAF50'; // Green
+    if (numGrade >= 80) return '#2196F3'; // Blue
+    if (numGrade >= 70) return '#FF9800'; // Orange
+    if (numGrade >= 60) return '#FF5722'; // Deep Orange
+    return '#F44336'; // Red
   };
 
   const getPerformanceText = (average: string | null) => {
@@ -98,67 +97,114 @@ const Grades: React.FC = () => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     });
   };
 
-  if (loading && !refreshing) {
+  const getTotalAverage = () => {
+    if (grades.length === 0) return null;
+    
+    let totalSum = 0;
+    let totalCount = 0;
+    
+    grades.forEach(grade => {
+      const average = calculateAverage(grade);
+      if (average) {
+        totalSum += parseFloat(average);
+        totalCount++;
+      }
+    });
+    
+    if (totalCount === 0) return null;
+    return (totalSum / totalCount).toFixed(1);
+  };
+
+  const getTotalSubjects = () => {
+    return grades.reduce((total, grade) => {
+      return total + Object.keys(grade.subjects || {}).length;
+    }, 0);
+  };
+
+  const renderStatistics = () => {
+    const totalAverage = getTotalAverage();
+    
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading exam results...</Text>
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Icon name="school" size={24} color="#2196F3" />
+          <Text style={styles.statNumber}>{grades.length}</Text>
+          <Text style={styles.statLabel}>Exams</Text>
         </View>
-      </SafeAreaView>
+        
+        <View style={styles.statItem}>
+          <Icon name="subject" size={24} color="#4CAF50" />
+          <Text style={styles.statNumber}>{getTotalSubjects()}</Text>
+          <Text style={styles.statLabel}>Subjects</Text>
+        </View>
+        
+        <View style={styles.statItem}>
+          <Icon name="bar-chart" size={24} color="#FF9800" />
+          <Text style={styles.statNumber}>
+            {totalAverage || 'N/A'}
+          </Text>
+          <Text style={styles.statLabel}>Average</Text>
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>Loading exam results...</Text>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Exam Results</Text>
-          <Text style={styles.headerSubtitle}>
-            {grades.length} exam{grades.length !== 1 ? 's' : ''} recorded
+    <View style={styles.container}>
+      {/* Header matching Attendance page */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Grades</Text>
+      </View>
+
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="error-outline" size={48} color="#F44336" />
+          <Text style={styles.errorTitle}>Unable to Load Results</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={loadGrades}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : grades.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Icon name="assessment" size={64} color="#CCCCCC" />
+          <Text style={styles.emptyTitle}>No Exam Results</Text>
+          <Text style={styles.emptyText}>
+            Your exam results will appear here once they are published.
           </Text>
         </View>
-
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>⚠️</Text>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={loadGrades}
-            >
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : grades.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📊</Text>
-            <Text style={styles.emptyTitle}>No Exam Results</Text>
-            <Text style={styles.emptyText}>
-              Your exam results will appear here once they are published.
-            </Text>
-          </View>
-        ) : (
+      ) : (
+        <View style={styles.contentContainer}>
+          {renderStatistics()}
+          
           <ScrollView
+            style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={['#3b82f6']}
-                tintColor="#3b82f6"
+                colors={['#2196F3']}
               />
             }
-            contentContainerStyle={styles.scrollContent}
           >
             {grades.map((grade, index) => {
               const average = calculateAverage(grade);
@@ -177,9 +223,12 @@ const Grades: React.FC = () => {
                 >
                   <View style={styles.gradeCardHeader}>
                     <View style={styles.examInfo}>
-                      <Text style={styles.examName} numberOfLines={1}>
-                        {grade.examName}
-                      </Text>
+                      <View style={styles.examTitleContainer}>
+                        <Icon name="assignment" size={20} color="#2196F3" style={styles.examIcon} />
+                        <Text style={styles.examName} numberOfLines={1}>
+                          {grade.examName}
+                        </Text>
+                      </View>
                       <Text style={styles.examDate}>
                         {formatDate(grade.date)}
                       </Text>
@@ -235,7 +284,10 @@ const Grades: React.FC = () => {
                                 {gradeValue}
                               </Text>
                             </View>
-                            <Text style={styles.gradeLetterBadge}>
+                            <Text style={[
+                              styles.gradeLetterBadge,
+                              { color: getGradeColor(gradeValue) }
+                            ]}>
                               {getGradeLetter(gradeValue)}
                             </Text>
                           </View>
@@ -245,12 +297,22 @@ const Grades: React.FC = () => {
                   )}
 
                   <View style={styles.cardFooter}>
-                    <Text style={styles.expandText}>
-                      {isExpanded ? 'Tap to collapse' : 'Tap to expand'}
-                    </Text>
-                    <Text style={styles.subjectCount}>
-                      {Object.keys(grade.subjects).length} subject{Object.keys(grade.subjects).length !== 1 ? 's' : ''}
-                    </Text>
+                    <View style={styles.footerLeft}>
+                      <Icon 
+                        name={isExpanded ? "expand-less" : "expand-more"} 
+                        size={20} 
+                        color="#2196F3" 
+                      />
+                      <Text style={styles.expandText}>
+                        {isExpanded ? 'Tap to collapse' : 'Tap to expand'}
+                      </Text>
+                    </View>
+                    <View style={styles.subjectCountContainer}>
+                      <Icon name="book" size={14} color="#666" />
+                      <Text style={styles.subjectCount}>
+                        {Object.keys(grade.subjects).length} subject{Object.keys(grade.subjects).length !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
                   </View>
                 </TouchableOpacity>
               );
@@ -262,110 +324,146 @@ const Grades: React.FC = () => {
               </Text>
             </View>
           </ScrollView>
-        )}
-      </View>
-    </SafeAreaView>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
+  // Container and Layout
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F8F9FA',
   },
+  contentContainer: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+
+  // Header matching Attendance page
+  header: {
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: '#2196F3',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+
+  // Statistics
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  // Loading State
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
   },
   loadingText: {
-    marginTop: 12,
-    color: '#6b7280',
+    marginTop: 8,
+    color: '#666',
     fontSize: 16,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
+
+  // Error State
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    padding: 20,
+    backgroundColor: '#F8F9FA',
   },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
   },
   errorText: {
     fontSize: 16,
-    color: '#ef4444',
+    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
-    lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#2196F3',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
+
+  // Empty State
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#999',
     textAlign: 'center',
-    lineHeight: 22,
+    paddingHorizontal: 40,
   },
-  scrollContent: {
-    padding: 16,
-  },
+
+  // Grade Card
   gradeCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
     overflow: 'hidden',
   },
@@ -375,7 +473,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   gradeCardHeader: {
-    padding: 20,
+    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -384,15 +482,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
+  examTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  examIcon: {
+    marginRight: 8,
+  },
   examName: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#2c3e50',
+    flex: 1,
   },
   examDate: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#666',
+    marginLeft: 28, // Align with icon + text
   },
   gradeSummary: {
     alignItems: 'flex-end',
@@ -403,7 +510,7 @@ const styles = StyleSheet.create({
   },
   averageLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#666',
     marginBottom: 4,
     fontWeight: '500',
   },
@@ -411,7 +518,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#3b82f6',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -422,7 +528,7 @@ const styles = StyleSheet.create({
   },
   averageValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#ffffff',
   },
   gradeDetails: {
@@ -430,19 +536,18 @@ const styles = StyleSheet.create({
   },
   gradeLetter: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 2,
   },
   performanceText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#3b82f6',
   },
   expandedContent: {
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    padding: 20,
+    borderTopColor: '#F0F0F0',
+    padding: 16,
     paddingTop: 16,
   },
   subjectsHeader: {
@@ -451,12 +556,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#F0F0F0',
   },
   subjectsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#666',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -468,7 +573,7 @@ const styles = StyleSheet.create({
   },
   subjectName: {
     fontSize: 16,
-    color: '#4b5563',
+    color: '#333',
     flex: 1,
   },
   gradeValueContainer: {
@@ -476,10 +581,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gradeBadge: {
-    backgroundColor: '#3b82f6',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
     minWidth: 48,
     alignItems: 'center',
     marginRight: 8,
@@ -492,7 +596,6 @@ const styles = StyleSheet.create({
   gradeLetterBadge: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
     minWidth: 20,
     textAlign: 'center',
   },
@@ -500,27 +603,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 0,
+    padding: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: '#F0F0F0',
+  },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   expandText: {
     fontSize: 14,
-    color: '#3b82f6',
+    color: '#2196F3',
     fontWeight: '500',
+    marginLeft: 4,
+  },
+  subjectCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   subjectCount: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#666',
+    marginLeft: 4,
   },
   footer: {
     padding: 20,
     alignItems: 'center',
+    marginBottom: 16,
   },
   footerText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#999',
     textAlign: 'center',
     lineHeight: 20,
   },

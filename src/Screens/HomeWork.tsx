@@ -331,36 +331,37 @@ const HomeworkScreen: React.FC = () => {
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
         <Text style={styles.loadingText}>Loading homework...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header matching Attendance page style */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Homework</Text>
-        <Text style={styles.headerSubtitle}>
-          {filteredHomework.length} item{filteredHomework.length !== 1 ? 's' : ''}
-        </Text>
       </View>
 
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#6c757d" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search homework..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          clearButtonMode="while-editing"
-        />
+      {/* Search and Filter Bar */}
+      <View style={styles.searchFilterContainer}>
+        <View style={styles.searchContainer}>
+          <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search homework..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
+          />
+        </View>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setFilterModalVisible(true)}
         >
-          <Icon name="filter-list" size={24} color="#007AFF" />
+          <Icon name="filter-list" size={24} color="#2196F3" />
           {(selectedFilter !== 'all' || dateFilter || selectedSubject) && (
             <View style={styles.filterBadge}>
               <Text style={styles.filterBadgeText}>!</Text>
@@ -369,99 +370,128 @@ const HomeworkScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredHomework}
-        renderItem={renderHomeworkItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => loadHomework(true)}
-            colors={['#007AFF']}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="assignment" size={64} color="#e0e0e0" />
-            <Text style={styles.emptyText}>
-              {searchQuery || selectedFilter !== 'all' || dateFilter || selectedSubject
-                ? 'No homework matches your filters'
-                : 'No homework assigned yet'}
-            </Text>
-            {(searchQuery || selectedFilter !== 'all' || dateFilter || selectedSubject) && (
-              <TouchableOpacity
-                style={styles.clearFiltersButton}
-                onPress={clearFilters}
-              >
-                <Text style={styles.clearFiltersText}>Clear Filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
-        ListHeaderComponent={
-          filteredHomework.length > 0 ? (
-            <Text style={styles.listHeader}>
-              {selectedFilter === 'today' 
-                ? "Today's Homework" 
-                : selectedFilter === 'thisWeek'
-                ? "This Week's Homework"
-                : selectedSubject
-                ? `${selectedSubject} Homework`
-                : dateFilter
-                ? `Homework for ${format(dateFilter, 'MMM dd, yyyy')}`
-                : 'All Homework'}
-            </Text>
-          ) : null
-        }
-      />
-
-      {renderFilterModal()}
-      
-      {showDatePicker && (
-        <DateTimePicker
-          value={dateFilter || new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
+      {/* Content */}
+      <View style={styles.contentContainer}>
+        <FlatList
+          data={filteredHomework}
+          renderItem={renderHomeworkItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadHomework(true)}
+              colors={['#2196F3']}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Icon name="assignment" size={64} color="#CCCCCC" />
+              <Text style={styles.emptyTitle}>
+                {searchQuery || selectedFilter !== 'all' || dateFilter || selectedSubject
+                  ? 'No homework matches your filters'
+                  : 'No homework assigned yet'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {searchQuery || selectedFilter !== 'all' || dateFilter || selectedSubject
+                  ? 'Try changing your search or filters'
+                  : 'Homework will appear here when assigned'}
+              </Text>
+              {(searchQuery || selectedFilter !== 'all' || dateFilter || selectedSubject) && (
+                <TouchableOpacity
+                  style={styles.clearFiltersButton}
+                  onPress={clearFilters}
+                >
+                  <Text style={styles.clearFiltersText}>Clear Filters</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+          ListHeaderComponent={
+            filteredHomework.length > 0 ? (
+              <View style={styles.listHeaderContainer}>
+                <Text style={styles.listHeaderText}>
+                  {filteredHomework.length} item{filteredHomework.length !== 1 ? 's' : ''}
+                </Text>
+                <Text style={styles.listHeaderSubtext}>
+                  {selectedFilter === 'today' 
+                    ? "Today's Homework" 
+                    : selectedFilter === 'thisWeek'
+                    ? "This Week's Homework"
+                    : selectedSubject
+                    ? `${selectedSubject} Homework`
+                    : dateFilter
+                    ? `Homework for ${format(dateFilter, 'MMM dd, yyyy')}`
+                    : 'All Homework'}
+                </Text>
+              </View>
+            ) : null
+          }
         />
-      )}
-    </SafeAreaView>
+
+        {renderFilterModal()}
+        
+        {showDatePicker && (
+          <DateTimePicker
+            value={dateFilter || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleDateChange}
+          />
+        )}
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Container and Layout
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F8F9FA',
   },
+  contentContainer: {
+    flex: 1,
+  },
+
+  // Header matching Attendance page
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 50,
+    paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    backgroundColor: '#2196F3',
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1c1c1e',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  searchContainer: {
+
+  // Search and Filter Section
+  searchFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    backgroundColor: 'white',
+    marginTop: 16,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 40,
   },
   searchIcon: {
     marginRight: 8,
@@ -469,11 +499,8 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    paddingHorizontal: 12,
     fontSize: 16,
-    color: '#1c1c1e',
+    color: '#333',
   },
   filterButton: {
     marginLeft: 12,
@@ -484,7 +511,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#F44336',
     width: 16,
     height: 16,
     borderRadius: 8,
@@ -496,31 +523,41 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+
+  // List and Content
   listContainer: {
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  listHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6c757d',
+  listHeaderContainer: {
     marginBottom: 16,
-    textAlign: 'center',
   },
+  listHeaderText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  listHeaderSubtext: {
+    fontSize: 14,
+    color: '#666',
+  },
+
+  // Homework Card
   homeworkCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   todayHomeworkCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
+    borderLeftColor: '#2196F3',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -541,7 +578,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   todayBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2196F3',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -553,7 +590,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#6c757d',
+    color: '#666',
     fontWeight: '500',
   },
   detailsContainer: {
@@ -582,61 +619,74 @@ const styles = StyleSheet.create({
   },
   classText: {
     fontSize: 13,
-    color: '#6c757d',
+    color: '#666',
     marginLeft: 4,
   },
   updatedText: {
     fontSize: 13,
-    color: '#6c757d',
+    color: '#666',
     marginLeft: 4,
     fontStyle: 'italic',
   },
+
+  // Loading State
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F8F9FA',
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 8,
+    color: '#666',
     fontSize: 16,
-    color: '#6c757d',
   },
+
+  // Empty State
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    minHeight: 300,
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#6c757d',
+    fontSize: 16,
+    color: '#999',
     textAlign: 'center',
-    marginTop: 16,
+    paddingHorizontal: 40,
     marginBottom: 24,
   },
   clearFiltersButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 8,
   },
   clearFiltersText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
+
+  // Filter Modal (updated to match Attendance modal style)
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '80%',
+    maxHeight: '70%',
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -644,12 +694,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#F0F0F0',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#1c1c1e',
+    color: '#333',
   },
   filterOptions: {
     paddingHorizontal: 20,
@@ -658,7 +708,7 @@ const styles = StyleSheet.create({
   filterSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1c1c1e',
+    color: '#333',
     marginTop: 16,
     marginBottom: 8,
   },
@@ -672,16 +722,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedFilterOption: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#E3F2FD',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#2196F3',
   },
   filterOptionText: {
     fontSize: 16,
-    color: '#1c1c1e',
+    color: '#333',
   },
   selectedFilterOptionText: {
-    color: '#007AFF',
+    color: '#2196F3',
     fontWeight: '500',
   },
   dateFilterButton: {
@@ -695,7 +745,7 @@ const styles = StyleSheet.create({
   },
   dateFilterText: {
     fontSize: 16,
-    color: '#1c1c1e',
+    color: '#333',
     flex: 1,
     marginLeft: 12,
   },
@@ -708,24 +758,24 @@ const styles = StyleSheet.create({
   subjectOption: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#E0E0E0',
   },
   selectedSubjectOption: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#E3F2FD',
   },
   subjectOptionText: {
     fontSize: 16,
-    color: '#1c1c1e',
+    color: '#333',
   },
   selectedSubjectOptionText: {
-    color: '#007AFF',
+    color: '#2196F3',
     fontWeight: '500',
   },
   modalButtons: {
     flexDirection: 'row',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
+    borderTopColor: '#E0E0E0',
   },
   clearButton: {
     flex: 1,
@@ -737,13 +787,13 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     fontSize: 16,
-    color: '#6c757d',
+    color: '#666',
     fontWeight: '500',
   },
   applyButton: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2196F3',
     borderRadius: 8,
     alignItems: 'center',
   },

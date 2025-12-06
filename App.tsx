@@ -4,19 +4,49 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { onAuthStateChanged } from "firebase/auth";
 import { Provider as PaperProvider } from "react-native-paper";
+import { ActivityIndicator, View, StyleSheet } from "react-native";
 
-import { ActivityIndicator, View } from "react-native";
 import { auth } from "./src/Service/firebase";
 import Dashboard from "./src/Screens/Dashboard";
 import LoginScreen from "./src/Screens/LoginScreen";
 import Attendance from "./src/Screens/Attendance";
-import HomeworkScreen from "./src/Screens/HomeWork";
 import AnnouncementScreen from "./src/Screens/Announcement";
 import Grades from "./src/Screens/Grades";
 import Events from "./src/Screens/Events";
 import Gallery from "./src/Screens/Gallery";
+import Profile from "./src/Screens/Profile";
+import Settings from "./src/Screens/Settings";
+import BottomNavigation from "./src/Components/BottomNavigation";
+import Homework from "./src/Screens/HomeWork";
 
 const Stack = createNativeStackNavigator();
+
+// Main Layout component that includes BottomNavigation
+const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <View style={styles.mainContainer}>
+      <View style={styles.contentContainer}>
+        {children}
+      </View>
+      <BottomNavigation />
+    </View>
+  );
+};
+
+// Wrapper for screens that should show BottomNavigation
+const withBottomNavigation = (ScreenComponent: React.ComponentType<any>) => {
+  return (props: any) => (
+    <MainLayout>
+      <ScreenComponent {...props} />
+    </MainLayout>
+  );
+};
+
+// Create wrapped versions of the main screens
+const DashboardWithNav = withBottomNavigation(Dashboard);
+const GalleryWithNav = withBottomNavigation(Gallery);
+const ProfileWithNav = withBottomNavigation(Profile);
+const SettingsWithNav = withBottomNavigation(Settings);
 
 const App = () => {
   const [user, setUser] = useState<any>(null);
@@ -41,25 +71,45 @@ const App = () => {
 
   return (
     <PaperProvider>
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          <>
-          <Stack.Screen name="Dashboard" component={Dashboard} />
-          <Stack.Screen name="Attendance" component={Attendance} />
-          <Stack.Screen name="Homework" component={HomeworkScreen} />
-          <Stack.Screen name="Announcement" component={AnnouncementScreen} />
-          <Stack.Screen name="Grades" component={Grades} />
-          <Stack.Screen name="Events" component={Events} />
-          <Stack.Screen name="Gallery" component={Gallery} />
-          </>
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+      <NavigationContainer>
+        <Stack.Navigator 
+          screenOptions={{ 
+            headerShown: false,
+            animation: 'slide_from_right'
+          }}
+        >
+          {user ? (
+            <>
+              {/* Main screens with BottomNavigation */}
+              <Stack.Screen name="Dashboard" component={DashboardWithNav} />
+              <Stack.Screen name="Gallery" component={GalleryWithNav} />
+              <Stack.Screen name="Profile" component={ProfileWithNav} />
+              <Stack.Screen name="Settings" component={SettingsWithNav} />
+              
+              {/* Other screens without BottomNavigation */}
+              <Stack.Screen name="Attendance" component={Attendance} />
+              <Stack.Screen name="Homework" component={Homework} />
+              <Stack.Screen name="Announcement" component={AnnouncementScreen} />
+              <Stack.Screen name="Grades" component={Grades} />
+              <Stack.Screen name="Events" component={Events} />
+            </>
+          ) : (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
     </PaperProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  contentContainer: {
+    flex: 1,
+  },
+});
 
 export default App;

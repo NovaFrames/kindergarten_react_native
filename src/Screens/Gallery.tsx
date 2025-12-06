@@ -1,4 +1,3 @@
-// src/screens/Gallery.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,8 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
-  StatusBar,
   Image,
   TextInput,
   Dimensions,
@@ -30,6 +27,7 @@ import {
   fetchPosts as fetchPostsStatic
 } from '../Service/functions';
 import { format } from 'date-fns';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -199,7 +197,7 @@ const Gallery: React.FC = () => {
     if (images.length === 0 && videos.length === 0) {
       return (
         <View style={styles.noMediaContainer}>
-          <Text style={styles.noMediaIcon}>📄</Text>
+          <Icon name="article" size={32} color="#666" />
           <Text style={styles.noMediaText}>Text Post</Text>
         </View>
       );
@@ -223,7 +221,7 @@ const Gallery: React.FC = () => {
           />
           {videos.length > 0 && (
             <View style={styles.videoBadge}>
-              <Text style={styles.videoIcon}>🎬</Text>
+              <Icon name="videocam" size={16} color="#FFF" />
               <Text style={styles.videoCount}>{videos.length}</Text>
             </View>
           )}
@@ -257,7 +255,7 @@ const Gallery: React.FC = () => {
           ))}
           {videos.length > 0 && (
             <View style={styles.videoBadge}>
-              <Text style={styles.videoIcon}>🎬</Text>
+              <Icon name="videocam" size={16} color="#FFF" />
               <Text style={styles.videoCount}>{videos.length}</Text>
             </View>
           )}
@@ -298,7 +296,7 @@ const Gallery: React.FC = () => {
         {/* Show video count if any videos exist */}
         {videos.length > 0 && (
           <View style={styles.videoBadge}>
-            <Text style={styles.videoIcon}>🎬</Text>
+            <Icon name="videocam" size={16} color="#FFF" />
             <Text style={styles.videoCount}>{videos.length}</Text>
           </View>
         )}
@@ -312,6 +310,7 @@ const Gallery: React.FC = () => {
     if (comments.length === 0) {
       return (
         <View style={styles.noCommentsContainer}>
+          <Icon name="chat-bubble-outline" size={32} color="#CCC" />
           <Text style={styles.noCommentsText}>No comments yet</Text>
           <Text style={styles.noCommentsSubtext}>Be the first to comment!</Text>
         </View>
@@ -354,6 +353,46 @@ const Gallery: React.FC = () => {
     return !!post.likes[currentUser.uid];
   };
 
+  const renderStatistics = () => {
+    const totalLikes = posts.reduce((sum, post) => sum + getLikeCount(post), 0);
+    const totalImages = posts.reduce((sum, post) => {
+      const images = post.mediaUrls?.filter(media => media.type === 'image') || [];
+      return sum + images.length;
+    }, 0);
+    const totalVideos = posts.reduce((sum, post) => {
+      const videos = post.mediaUrls?.filter(media => media.type === 'video') || [];
+      return sum + videos.length;
+    }, 0);
+
+    return (
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Icon name="collections" size={24} color="#2196F3" />
+          <Text style={styles.statNumber}>{posts.length}</Text>
+          <Text style={styles.statLabel}>Posts</Text>
+        </View>
+        
+        <View style={styles.statItem}>
+          <Icon name="favorite" size={24} color="#F44336" />
+          <Text style={styles.statNumber}>{totalLikes}</Text>
+          <Text style={styles.statLabel}>Likes</Text>
+        </View>
+        
+        <View style={styles.statItem}>
+          <Icon name="photo" size={24} color="#4CAF50" />
+          <Text style={styles.statNumber}>{totalImages}</Text>
+          <Text style={styles.statLabel}>Photos</Text>
+        </View>
+
+        <View style={styles.statItem}>
+          <Icon name="videocam" size={24} color="#FF9800" />
+          <Text style={styles.statNumber}>{totalVideos}</Text>
+          <Text style={styles.statLabel}>Videos</Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderPost = ({ item: post }: { item: Post }) => {
     const teacherName = teacherNames[post.teacherId] || 'Teacher';
     const likeCount = getLikeCount(post);
@@ -365,7 +404,10 @@ const Gallery: React.FC = () => {
         {/* Post Header */}
         <View style={styles.postHeader}>
           <View style={styles.teacherInfo}>
-            <View style={styles.teacherAvatar}>
+            <View style={[
+              styles.teacherAvatar,
+              { backgroundColor: getAvatarColor(teacherName) }
+            ]}>
               <Text style={styles.avatarText}>
                 {teacherName.charAt(0).toUpperCase()}
               </Text>
@@ -404,18 +446,18 @@ const Gallery: React.FC = () => {
         {/* Stats and Actions */}
         <View style={styles.postStats}>
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statIcon}>❤️</Text>
+            <View style={styles.statIconItem}>
+              <Icon name="favorite" size={16} color="#F44336" />
               <Text style={styles.statCount}>{likeCount}</Text>
             </View>
             <TouchableOpacity
-              style={styles.statItem}
+              style={styles.statIconItem}
               onPress={() => {
                 setSelectedPost(post);
                 setCommentModalVisible(true);
               }}
             >
-              <Text style={styles.statIcon}>💬</Text>
+              <Icon name="chat-bubble-outline" size={16} color="#666" />
               <Text style={styles.statCount}>{commentCount}</Text>
             </TouchableOpacity>
           </View>
@@ -426,14 +468,16 @@ const Gallery: React.FC = () => {
               onPress={() => handleLikePress(post.id)}
               disabled={!currentUser?.uid || likingPostId === post.id}
             >
-              <Text style={[styles.actionIcon, isLiked && styles.likedIcon]}>
-                {isLiked ? '❤️' : '🤍'}
-              </Text>
+              <Icon 
+                name={isLiked ? "favorite" : "favorite-border"} 
+                size={20} 
+                color={isLiked ? "#F44336" : "#666"} 
+              />
               <Text style={[styles.actionText, isLiked && styles.likedText]}>
                 {isLiked ? 'Liked' : 'Like'}
               </Text>
               {likingPostId === post.id && (
-                <ActivityIndicator size="small" color="#ef4444" style={styles.likeLoading} />
+                <ActivityIndicator size="small" color="#F44336" style={styles.likeLoading} />
               )}
             </TouchableOpacity>
 
@@ -444,7 +488,7 @@ const Gallery: React.FC = () => {
                 setCommentModalVisible(true);
               }}
             >
-              <Text style={styles.actionIcon}>💬</Text>
+              <Icon name="chat-bubble-outline" size={20} color="#666" />
               <Text style={styles.actionText}>Comment</Text>
             </TouchableOpacity>
           </View>
@@ -460,303 +504,381 @@ const Gallery: React.FC = () => {
     );
   };
 
-  if (loading && !refreshing) {
+  // Helper function for avatar colors
+  const getAvatarColor = (name: string) => {
+    const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#3F51B5', '#009688'];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading posts...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>Loading gallery posts...</Text>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>School Gallery</Text>
-          <Text style={styles.headerSubtitle}>
-            {posts.length} post{posts.length !== 1 ? 's' : ''}
+    <View style={styles.container}>
+      {/* Header matching Attendance page */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Gallery</Text>
+      </View>
+
+      {/* View Mode Toggle */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, viewMode === 'list' && styles.activeTab]}
+          onPress={() => setViewMode('list')}
+        >
+          <Icon 
+            name="view-agenda" 
+            size={20} 
+            color={viewMode === 'list' ? "#FFF" : "#666"} 
+          />
+          <Text style={[styles.tabText, viewMode === 'list' && styles.activeTabText]}>
+            List
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, viewMode === 'grid' && styles.activeTab]}
+          onPress={() => setViewMode('grid')}
+        >
+          <Icon 
+            name="grid-view" 
+            size={20} 
+            color={viewMode === 'grid' ? "#FFF" : "#666"} 
+          />
+          <Text style={[styles.tabText, viewMode === 'grid' && styles.activeTabText]}>
+            Grid
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="error-outline" size={48} color="#F44336" />
+          <Text style={styles.errorTitle}>Unable to Load Posts</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={async () => {
+              setRefreshing(true);
+              try {
+                const newPosts = await fetchPostsStatic();
+                setPosts(newPosts);
+                setError(null);
+              } catch (err) {
+                console.error('Error retrying:', err);
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : posts.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Icon name="collections" size={64} color="#CCCCCC" />
+          <Text style={styles.emptyTitle}>No Posts Yet</Text>
+          <Text style={styles.emptyText}>
+            Posts from teachers will appear here when they share updates.
           </Text>
         </View>
-
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>⚠️</Text>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={async () => {
-                setRefreshing(true);
-                try {
-                  const newPosts = await fetchPostsStatic();
-                  setPosts(newPosts);
-                  setError(null);
-                } catch (err) {
-                  console.error('Error retrying:', err);
-                } finally {
-                  setRefreshing(false);
-                }
-              }}
-            >
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : posts.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📸</Text>
-            <Text style={styles.emptyTitle}>No Posts Yet</Text>
-            <Text style={styles.emptyText}>
-              Posts from teachers will appear here when they share updates.
-            </Text>
-          </View>
-        ) : (
-          <>
-            <FlatList
-              data={posts}
-              renderItem={renderPost}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.postsList}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={['#3b82f6']}
-                  tintColor="#3b82f6"
-                />
-              }
-              ListFooterComponent={
-                <View style={styles.footer}>
-                  <Text style={styles.footerText}>
-                    {posts.length} post{posts.length !== 1 ? 's' : ''} loaded
-                  </Text>
-                </View>
-              }
-            />
-          </>
-        )}
-
-        {/* Comment Modal */}
-        <Modal
-          visible={commentModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setCommentModalVisible(false)}
-        >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {selectedPost?.title || 'Comments'}
+      ) : (
+        <View style={styles.contentContainer}>
+          {renderStatistics()}
+          
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.postsList}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#2196F3']}
+              />
+            }
+            ListFooterComponent={
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                  Showing {posts.length} post{posts.length !== 1 ? 's' : ''}
                 </Text>
-                <TouchableOpacity
-                  onPress={() => setCommentModalVisible(false)}
-                  style={styles.closeButton}
-                >
-                  <Text style={styles.closeButtonText}>✕</Text>
-                </TouchableOpacity>
               </View>
+            }
+          />
+        </View>
+      )}
 
-              <ScrollView style={styles.modalCommentsList}>
-                {selectedPost && renderComments(selectedPost.id)}
-              </ScrollView>
-
-              <View style={styles.commentInputContainer}>
-                <TextInput
-                  style={styles.commentInput}
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChangeText={setNewComment}
-                  multiline
-                  maxLength={500}
-                  placeholderTextColor="#9ca3af"
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.commentSubmitButton,
-                    (!newComment.trim() || commentLoading) && styles.commentSubmitButtonDisabled
-                  ]}
-                  onPress={handleCommentSubmit}
-                  disabled={!newComment.trim() || commentLoading}
-                >
-                  {commentLoading ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <Text style={styles.commentSubmitText}>Post</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
-
-        {/* Image Modal */}
-        <Modal
-          visible={imageModalVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setImageModalVisible(false)}
+      {/* Comment Modal */}
+      <Modal
+        visible={commentModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCommentModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
         >
-          <View style={styles.imageModalContainer}>
-            <TouchableOpacity
-              style={styles.imageModalBackground}
-              onPress={() => setImageModalVisible(false)}
-              activeOpacity={1}
-            >
-              {selectedImage && (
-                <Image
-                  source={{ uri: selectedImage }}
-                  style={styles.fullSizeImage}
-                  resizeMode="contain"
-                />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.imageCloseButton}
-              onPress={() => setImageModalVisible(false)}
-            >
-              <Text style={styles.imageCloseButtonText}>✕</Text>
-            </TouchableOpacity>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedPost?.title || 'Comments'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCommentModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalCommentsList}>
+              {selectedPost && renderComments(selectedPost.id)}
+            </ScrollView>
+
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Write a comment..."
+                value={newComment}
+                onChangeText={setNewComment}
+                multiline
+                maxLength={500}
+                placeholderTextColor="#999"
+              />
+              <TouchableOpacity
+                style={[
+                  styles.commentSubmitButton,
+                  (!newComment.trim() || commentLoading) && styles.commentSubmitButtonDisabled
+                ]}
+                onPress={handleCommentSubmit}
+                disabled={!newComment.trim() || commentLoading}
+              >
+                {commentLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Icon name="send" size={20} color="#FFF" />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </Modal>
-      </View>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View style={styles.imageModalContainer}>
+          <TouchableOpacity
+            style={styles.imageModalBackground}
+            onPress={() => setImageModalVisible(false)}
+            activeOpacity={1}
+          >
+            {selectedImage && (
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.fullSizeImage}
+                resizeMode="contain"
+              />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.imageCloseButton}
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Icon name="close" size={24} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
+  // Container and Layout
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F8F9FA',
   },
+  contentContainer: {
+    flex: 1,
+  },
+
+  // Header matching Attendance page
+  header: {
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: '#2196F3',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+
+  // Tab Container
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#2196F3',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8,
+  },
+  activeTabText: {
+    color: 'white',
+  },
+
+  // Statistics
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  // Loading State
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
   },
   loadingText: {
-    marginTop: 12,
-    color: '#6b7280',
+    marginTop: 8,
+    color: '#666',
     fontSize: 16,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
+
+  // Error State
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    padding: 20,
+    backgroundColor: '#F8F9FA',
   },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
   },
   errorText: {
     fontSize: 16,
-    color: '#ef4444',
+    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
-    lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#2196F3',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
+
+  // Empty State
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#999',
     textAlign: 'center',
-    lineHeight: 22,
+    paddingHorizontal: 40,
   },
-  viewModeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-  },
-  viewModeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-    backgroundColor: '#f3f4f6',
-  },
-  viewModeButtonActive: {
-    backgroundColor: '#3b82f6',
-  },
-  viewModeIcon: {
-    fontSize: 18,
-  },
-  viewModeIconActive: {
-    color: '#ffffff',
-  },
+
+  // Posts List
   postsList: {
-    padding: 16,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
+
+  // Post Card
   postCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 12,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
   postHeader: {
@@ -773,7 +895,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#3b82f6',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -789,32 +910,34 @@ const styles = StyleSheet.create({
   teacherName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#333',
     marginBottom: 2,
   },
   postTime: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#666',
   },
   postContent: {
     marginBottom: 16,
   },
   postTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
     marginBottom: 8,
   },
   postDescription: {
     fontSize: 15,
-    color: '#4b5563',
+    color: '#495057',
     lineHeight: 22,
   },
+
+  // Media Section
   mediaSection: {
     marginBottom: 16,
   },
   singleImageContainer: {
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
     height: 200,
     position: 'relative',
@@ -840,6 +963,7 @@ const styles = StyleSheet.create({
   twoImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 8,
   },
   multipleImagesContainer: {
     flexDirection: 'row',
@@ -878,8 +1002,8 @@ const styles = StyleSheet.create({
   },
   moreImagesText: {
     color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   videoBadge: {
     position: 'absolute',
@@ -892,18 +1016,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
-  videoIcon: {
-    fontSize: 12,
-    marginRight: 4,
-  },
   videoCount: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
+    marginLeft: 4,
   },
   mediaCount: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#666',
     marginTop: 8,
     textAlign: 'right',
   },
@@ -915,15 +1036,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  noMediaIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
   noMediaText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#666',
     fontWeight: '500',
+    marginTop: 8,
   },
+
+  // Post Stats
   postStats: {
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
@@ -933,19 +1053,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 12,
   },
-  statItem: {
+  statIconItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 20,
   },
-  statIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
   statCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#333',
+    marginLeft: 4,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -960,35 +1077,31 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#F8F9FA',
     marginHorizontal: 4,
   },
   likedButton: {
-    backgroundColor: '#fef2f2',
-  },
-  actionIcon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-  likedIcon: {
-    color: '#ef4444',
+    backgroundColor: '#FFEBEE',
   },
   actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#333',
+    marginLeft: 6,
   },
   likedText: {
-    color: '#ef4444',
+    color: '#F44336',
   },
   likeLoading: {
     marginLeft: 6,
   },
+
+  // Comments
   commentsPreview: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: '#F0F0F0',
   },
   noCommentsContainer: {
     alignItems: 'center',
@@ -996,12 +1109,13 @@ const styles = StyleSheet.create({
   },
   noCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#666',
     marginBottom: 4,
+    marginTop: 8,
   },
   noCommentsSubtext: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: '#999',
   },
   commentsList: {
     paddingHorizontal: 4,
@@ -1010,38 +1124,42 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   commentBubble: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     padding: 12,
     maxWidth: '85%',
   },
   commentText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#333',
     marginBottom: 4,
     lineHeight: 20,
   },
   commentTime: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#999',
     textAlign: 'right',
   },
   moreCommentsText: {
     fontSize: 13,
-    color: '#3b82f6',
+    color: '#2196F3',
     fontWeight: '500',
     textAlign: 'center',
     marginTop: 8,
   },
+
+  // Footer
   footer: {
     padding: 20,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#999',
     textAlign: 'center',
   },
+
+  // Comment Modal
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1049,8 +1167,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     maxHeight: height * 0.8,
   },
   modalHeader: {
@@ -1059,25 +1177,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#F0F0F0',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: '600',
   },
   modalCommentsList: {
     maxHeight: height * 0.5,
@@ -1087,34 +1199,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: '#F0F0F0',
     alignItems: 'flex-end',
   },
   commentInput: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#F8F9FA',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     maxHeight: 100,
     fontSize: 15,
-    color: '#111827',
+    color: '#333',
     marginRight: 12,
   },
   commentSubmitButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: '#2196F3',
+    width: 40,
+    height: 40,
     borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   commentSubmitButtonDisabled: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#CCC',
   },
-  commentSubmitText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
+  // Image Modal
   imageModalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -1138,11 +1249,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  imageCloseButtonText: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '600',
   },
 });
 

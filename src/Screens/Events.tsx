@@ -1,4 +1,3 @@
-// src/screens/Events.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
@@ -8,14 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
-  StatusBar,
   SectionList,
   TextInput,
-  Dimensions
+  Dimensions,
+  FlatList
 } from 'react-native';
 import { fetchEvents, EventItem, fetchUpcomingEvents } from '../Service/functions';
-import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns';
+import { format, parseISO, isToday, isTomorrow, isPast, isThisWeek, isThisMonth } from 'date-fns';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -32,7 +31,7 @@ const Events: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'upcoming' | 'all'>('upcoming');
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'all'>('upcoming');
 
   useEffect(() => {
     loadEvents();
@@ -43,7 +42,7 @@ const Events: React.FC = () => {
       setError(null);
       const [allEventsData, upcomingEventsData] = await Promise.all([
         fetchEvents(),
-        fetchUpcomingEvents(50) // Fetch large number for upcoming view
+        fetchUpcomingEvents(50)
       ]);
       setAllEvents(allEventsData);
       setUpcomingEvents(upcomingEventsData);
@@ -77,52 +76,51 @@ const Events: React.FC = () => {
 
   const getEventIcon = (eventType: string) => {
     switch (eventType?.toLowerCase()) {
-      case 'exam': return '📝';
-      case 'holiday': return '🎉';
-      case 'sports': return '⚽';
-      case 'cultural': return '🎭';
-      case 'workshop': return '🔧';
-      case 'meeting': return '👥';
-      case 'seminar': return '🎤';
-      case 'competition': return '🏆';
-      default: return '📅';
+      case 'exam': return 'assignment';
+      case 'holiday': return 'beach-access';
+      case 'sports': return 'sports-soccer';
+      case 'cultural': return 'music-note';
+      case 'workshop': return 'build';
+      case 'meeting': return 'groups';
+      case 'seminar': return 'mic';
+      case 'competition': return 'emoji-events';
+      default: return 'event';
     }
   };
 
   const getEventColor = (eventType: string) => {
     switch (eventType?.toLowerCase()) {
-      case 'exam': return '#ef4444';
-      case 'holiday': return '#10b981';
-      case 'sports': return '#3b82f6';
-      case 'cultural': return '#8b5cf6';
-      case 'workshop': return '#f59e0b';
-      case 'meeting': return '#6b7280';
-      case 'seminar': return '#ec4899';
-      case 'competition': return '#f97316';
-      default: return '#3b82f6';
+      case 'exam': return '#F44336';
+      case 'holiday': return '#4CAF50';
+      case 'sports': return '#2196F3';
+      case 'cultural': return '#9C27B0';
+      case 'workshop': return '#FF9800';
+      case 'meeting': return '#607D8B';
+      case 'seminar': return '#E91E63';
+      case 'competition': return '#FF5722';
+      default: return '#2196F3';
     }
   };
 
   const getRelativeDate = (dateString: string) => {
     const date = parseISO(dateString);
-    const today = new Date();
     
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
-    if (isPast(date)) return format(date, 'MMM d, yyyy');
     
+    const today = new Date();
     const diffTime = Math.abs(date.getTime() - today.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays <= 7) return `In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-    if (diffDays <= 14) return 'Next week';
-    if (diffDays <= 30) return 'This month';
+    if (isThisWeek(date)) return 'This Week';
+    if (isThisMonth(date)) return 'This Month';
     return format(date, 'MMM yyyy');
   };
 
   // Filter and categorize events
   const filteredEvents = useMemo(() => {
-    const events = viewMode === 'upcoming' ? upcomingEvents : allEvents;
+    const events = activeTab === 'upcoming' ? upcomingEvents : allEvents;
     
     return events.filter(event => {
       const matchesSearch = searchQuery.trim() === '' || 
@@ -135,7 +133,7 @@ const Events: React.FC = () => {
       
       return matchesSearch && matchesCategory;
     });
-  }, [allEvents, upcomingEvents, viewMode, searchQuery, selectedCategory]);
+  }, [allEvents, upcomingEvents, activeTab, searchQuery, selectedCategory]);
 
   // Create sections for SectionList
   const eventSections = useMemo(() => {
@@ -156,6 +154,8 @@ const Events: React.FC = () => {
       if (b === 'Today') return 1;
       if (a === 'Tomorrow') return -1;
       if (b === 'Tomorrow') return 1;
+      if (a === 'This Week') return -1;
+      if (b === 'This Week') return 1;
       return a.localeCompare(b);
     });
     
@@ -179,30 +179,25 @@ const Events: React.FC = () => {
     return ['All', ...allCategories];
   }, [allEvents, upcomingEvents]);
 
-  if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading events...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const renderEventItem = ({ item }: { item: EventItem }) => {
     const startDate = parseISO(item.startDate);
     const endDate = parseISO(item.endDate);
     const isMultiDay = startDate.getTime() !== endDate.getTime();
+    const eventColor = getEventColor(item.eventType);
+    const isPastEvent = isPast(endDate);
     
     return (
       <TouchableOpacity style={styles.eventCard} activeOpacity={0.8}>
         <View style={styles.eventCardHeader}>
-          <View style={styles.eventIconContainer}>
-            <Text style={styles.eventIcon}>
-              {getEventIcon(item.eventType)}
-            </Text>
+          <View style={[
+            styles.eventIconContainer,
+            { backgroundColor: eventColor + '20' }
+          ]}>
+            <Icon 
+              name={getEventIcon(item.eventType)} 
+              size={24} 
+              color={eventColor} 
+            />
           </View>
           
           <View style={styles.eventHeaderContent}>
@@ -210,22 +205,24 @@ const Events: React.FC = () => {
             <View style={styles.eventTypeContainer}>
               <View style={[
                 styles.eventTypeBadge,
-                { backgroundColor: getEventColor(item.eventType) }
+                { backgroundColor: eventColor }
               ]}>
                 <Text style={styles.eventTypeBadgeText}>
                   {item.eventType}
                 </Text>
               </View>
-              <Text style={styles.eventDateBadge}>
-                {formatDate(item.startDate)}
-              </Text>
+              {isPastEvent && (
+                <View style={styles.completedBadge}>
+                  <Text style={styles.completedBadgeText}>Completed</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
         
         <View style={styles.eventDetails}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>📅</Text>
+            <Icon name="calendar-today" size={16} color="#666" />
             <Text style={styles.detailText}>
               {formatDate(item.startDate)}
               {isMultiDay && ` - ${formatDate(item.endDate)}`}
@@ -233,21 +230,21 @@ const Events: React.FC = () => {
           </View>
           
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>🕒</Text>
+            <Icon name="access-time" size={16} color="#666" />
             <Text style={styles.detailText}>
               {formatTime(item.startTime)} - {formatTime(item.endTime)}
             </Text>
           </View>
           
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>📍</Text>
+            <Icon name="location-on" size={16} color="#666" />
             <Text style={styles.detailText}>{item.venue}</Text>
           </View>
           
           {item.description && (
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionLabel}>Description:</Text>
-              <Text style={styles.descriptionText}>
+              <Text style={styles.descriptionText} numberOfLines={2}>
                 {item.description}
               </Text>
             </View>
@@ -255,8 +252,11 @@ const Events: React.FC = () => {
         </View>
         
         <View style={styles.eventFooter}>
-          <Text style={styles.timeRemaining}>
-            {isPast(startDate) ? 'Event completed' : 'Upcoming event'}
+          <Text style={[
+            styles.timeRemaining,
+            { color: isPastEvent ? '#666' : eventColor }
+          ]}>
+            {isPastEvent ? 'Event completed' : 'Upcoming event'}
           </Text>
         </View>
       </TouchableOpacity>
@@ -270,110 +270,140 @@ const Events: React.FC = () => {
     </View>
   );
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>School Events</Text>
-          <Text style={styles.headerSubtitle}>
-            {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} found
-          </Text>
-        </View>
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>Loading events...</Text>
+      </View>
+    );
+  }
 
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>⚠️</Text>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={loadEvents}
-            >
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            {/* Search Bar */}
+  return (
+    <View style={styles.container}>
+      {/* Header matching Attendance page */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Events</Text>
+      </View>
+
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="error-outline" size={48} color="#F44336" />
+          <Text style={styles.errorTitle}>Unable to Load Events</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={loadEvents}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* Search and Filter Container */}
+          <View style={styles.searchFilterContainer}>
             <View style={styles.searchContainer}>
+              <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search events..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#999"
               />
             </View>
-
-            {/* View Mode Toggle */}
-            <View style={styles.viewModeContainer}>
+            
+            {/* Tab Container */}
+            <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={[
-                  styles.viewModeButton,
-                  viewMode === 'upcoming' && styles.viewModeButtonActive
-                ]}
-                onPress={() => setViewMode('upcoming')}
+                style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
+                onPress={() => setActiveTab('upcoming')}
               >
-                <Text style={[
-                  styles.viewModeText,
-                  viewMode === 'upcoming' && styles.viewModeTextActive
-                ]}>
+                <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
                   Upcoming
                 </Text>
               </TouchableOpacity>
+              
               <TouchableOpacity
-                style={[
-                  styles.viewModeButton,
-                  viewMode === 'all' && styles.viewModeButtonActive
-                ]}
-                onPress={() => setViewMode('all')}
+                style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+                onPress={() => setActiveTab('all')}
               >
-                <Text style={[
-                  styles.viewModeText,
-                  viewMode === 'all' && styles.viewModeTextActive
-                ]}>
+                <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
                   All Events
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
 
-            {/* Category Filter */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.categoriesContainer}
-              contentContainerStyle={styles.categoriesContent}
-            >
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryButton,
-                    (selectedCategory === category || 
-                     (category === 'All' && !selectedCategory)) && 
-                    styles.categoryButtonActive
-                  ]}
-                  onPress={() => 
-                    setSelectedCategory(category === 'All' ? null : category)
-                  }
-                >
-                  <Text style={[
-                    styles.categoryText,
-                    (selectedCategory === category || 
-                     (category === 'All' && !selectedCategory)) && 
-                    styles.categoryTextActive
-                  ]}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+          {/* Category Filter */}
+          {categories.length > 1 && (
+            <View style={styles.categoriesContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesContent}
+              >
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category}
+                    style={[
+                      styles.categoryButton,
+                      (selectedCategory === category || 
+                       (category === 'All' && !selectedCategory)) && 
+                      styles.categoryButtonActive
+                    ]}
+                    onPress={() => 
+                      setSelectedCategory(category === 'All' ? null : category)
+                    }
+                  >
+                    <Text style={[
+                      styles.categoryText,
+                      (selectedCategory === category || 
+                       (category === 'All' && !selectedCategory)) && 
+                      styles.categoryTextActive
+                    ]}>
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
-            {/* Events List */}
+          {/* Statistics */}
+          {filteredEvents.length > 0 && (
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Icon name="event" size={24} color="#2196F3" />
+                <Text style={styles.statNumber}>{filteredEvents.length}</Text>
+                <Text style={styles.statLabel}>Total</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Icon name="today" size={24} color="#4CAF50" />
+                <Text style={styles.statNumber}>
+                  {filteredEvents.filter(e => isToday(parseISO(e.startDate))).length}
+                </Text>
+                <Text style={styles.statLabel}>Today</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Icon name="category" size={24} color="#FF9800" />
+                <Text style={styles.statNumber}>
+                  {Array.from(new Set(filteredEvents.map(e => e.eventType))).length}
+                </Text>
+                <Text style={styles.statLabel}>Types</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Events List */}
+          <View style={styles.contentContainer}>
             {filteredEvents.length === 0 ? (
               <View style={styles.emptyContainer}>
+                <Icon name="event-busy" size={64} color="#CCCCCC" />
                 <Text style={styles.emptyTitle}>
-                  {searchQuery || selectedCategory ? 'No matching events' : 'No events found'}
+                  {searchQuery || selectedCategory ? 'No Matching Events' : 'No Events Found'}
                 </Text>
                 <Text style={styles.emptyText}>
                   {searchQuery || selectedCategory 
@@ -389,7 +419,7 @@ const Events: React.FC = () => {
                       setSelectedCategory(null);
                     }}
                   >
-                    <Text style={styles.clearFiltersText}>Clear filters</Text>
+                    <Text style={styles.clearFiltersText}>Clear Filters</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -405,129 +435,105 @@ const Events: React.FC = () => {
                   <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    colors={['#3b82f6']}
-                    tintColor="#3b82f6"
+                    colors={['#2196F3']}
                   />
                 }
                 stickySectionHeadersEnabled={false}
               />
             )}
-          </>
-        )}
-      </View>
-    </SafeAreaView>
+          </View>
+        </>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
+  // Container and Layout
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#F8F9FA',
   },
-  loadingContainer: {
+  contentContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 12,
-    color: '#6b7280',
-    fontSize: 16,
-  },
+
+  // Header matching Attendance page
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 50,
+    paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    backgroundColor: '#2196F3',
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  searchContainer: {
+
+  // Search and Filter Container
+  searchFilterContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  viewModeContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  viewModeButton: {
     flex: 1,
-    paddingVertical: 10,
+    height: 48,
+    fontSize: 16,
+    color: '#333',
+  },
+
+  // Tab Container
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
     alignItems: 'center',
     borderRadius: 8,
-    marginHorizontal: 4,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
-  viewModeButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+  activeTab: {
+    backgroundColor: '#2196F3',
   },
-  viewModeText: {
-    fontSize: 14,
+  tabText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#666',
   },
-  viewModeTextActive: {
-    color: '#ffffff',
+  activeTabText: {
+    color: 'white',
   },
+
+  // Categories Filter
   categoriesContainer: {
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 16,
   },
   categoriesContent: {
@@ -537,88 +543,173 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#E0E0E0',
     marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   categoryButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: '#2196F3',
+    borderColor: '#2196F3',
   },
   categoryText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#666',
   },
   categoryTextActive: {
-    color: '#ffffff',
+    color: 'white',
   },
-  emptyContainer: {
+
+  // Statistics
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  // Loading State
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    backgroundColor: '#F8F9FA',
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  loadingText: {
+    marginTop: 8,
+    color: '#666',
+    fontSize: 16,
+  },
+
+  // Error State
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#F8F9FA',
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Empty State
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#999',
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
+    paddingHorizontal: 40,
+    marginBottom: 24,
   },
   clearFiltersButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 8,
   },
   clearFiltersText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
   },
+
+  // Events List
   eventsList: {
-    padding: 16,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
+
+  // Section Header
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
-    marginTop: 20,
+    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '600',
+    color: '#333',
   },
   sectionCount: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#666',
     fontWeight: '500',
   },
+
+  // Event Card
   eventCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 12,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
   eventCardHeader: {
@@ -630,21 +721,17 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
-  eventIcon: {
-    fontSize: 24,
   },
   eventHeaderContent: {
     flex: 1,
   },
   eventCardTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: 'bold',
+    color: '#2c3e50',
     marginBottom: 8,
   },
   eventTypeContainer: {
@@ -652,26 +739,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eventTypeBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
     marginRight: 8,
   },
   eventTypeBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  completedBadge: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  completedBadgeText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
+  },
   eventDateBadge: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#666',
     fontWeight: '500',
   },
   eventDetails: {
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: '#F0F0F0',
     paddingTop: 16,
   },
   detailRow: {
@@ -679,42 +777,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  detailLabel: {
-    fontSize: 16,
-    marginRight: 12,
-    width: 24,
-  },
   detailText: {
     fontSize: 15,
-    color: '#4b5563',
+    color: '#333',
+    marginLeft: 12,
     flex: 1,
   },
   descriptionContainer: {
-    marginTop: 8,
+    marginTop: 12,
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#F8F9FA',
     borderRadius: 8,
   },
   descriptionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#333',
     marginBottom: 4,
   },
   descriptionText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#666',
     lineHeight: 20,
   },
   eventFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: '#F0F0F0',
     paddingTop: 12,
     marginTop: 12,
   },
   timeRemaining: {
     fontSize: 14,
-    color: '#3b82f6',
     fontWeight: '500',
     textAlign: 'center',
   },
