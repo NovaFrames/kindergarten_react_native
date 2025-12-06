@@ -110,16 +110,19 @@ const LoginScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>
-          <View style={styles.brandContainer}>
-            <Image
-              style={styles.brandLogo}
-              source={require("../../assets/icon.png")}
-              resizeMode="contain"
-            />
-            <Text style={styles.brandTitle}>Project XXX</Text>
-            <Text style={styles.brandSubtitle}>
-              Welcome back! Please sign in to stay updated.
-            </Text>
+          <View style={styles.heroWrapper}>
+            <View style={styles.gradientBlob} />
+            <View style={styles.heroContent}>
+              <Image
+                style={styles.brandLogo}
+                source={require("../../assets/icon.png")}
+                resizeMode="contain"
+              />
+              <Text style={styles.brandTitle}>Project XXX</Text>
+              <Text style={styles.brandSubtitle}>
+                Welcome back! Please sign in to stay updated.
+              </Text>
+            </View>
           </View>
 
           <View style={styles.card}>
@@ -193,13 +196,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 32,
   },
-  brandContainer: {
+  heroWrapper: {
+    height: 200,
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 32,
+    overflow: "hidden",
+  },
+  gradientBlob: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "#BFDBFE",
+    opacity: 0.4,
+  },
+  heroContent: {
+    alignItems: "center",
   },
   brandLogo: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
     marginBottom: 12,
   },
   brandTitle: {

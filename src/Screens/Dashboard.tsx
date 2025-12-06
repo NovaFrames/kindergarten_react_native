@@ -289,7 +289,7 @@ const Dashboard = ({ navigation }: any) => {
 
         {/* Recent Exam Results */}
         <View style={styles.sectionHeaderRow}>
-          <View>
+          <View> 
             <Text style={styles.sectionTitle}>Recent Exam Result</Text>
             <Text style={styles.sectionSubtext}>Latest performance summaries</Text>
           </View>
