@@ -287,9 +287,29 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+      <View style={styles.container}>
+        <ScreenHeader
+          title="Profile"
+          subtitle="View student details and contact information."
+          iconName="person"
+          iconColor="#2563EB"
+          actions={<HeaderNotificationButton />}
+        />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.skeletonHero} />
+          <View style={styles.skeletonQuickRow}>
+            <View style={styles.skeletonQuickCard} />
+            <View style={styles.skeletonQuickCard} />
+            <View style={styles.skeletonQuickCard} />
+          </View>
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <View key={idx} style={styles.skeletonSection} />
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -439,6 +459,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: "#666",
     fontSize: 16,
+  },
+  skeletonHero: {
+    height: 220,
+    borderRadius: 24,
+    backgroundColor: "#E5EAF0",
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  skeletonQuickRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  skeletonQuickCard: {
+    height: 90,
+    borderRadius: 16,
+    backgroundColor: "#F1F4F8",
+    flex: 1,
+  },
+  skeletonSection: {
+    height: 140,
+    borderRadius: 20,
+    backgroundColor: "#F1F4F8",
+    marginBottom: 16,
   },
 
   // Empty State
