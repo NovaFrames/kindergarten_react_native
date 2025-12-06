@@ -787,6 +787,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
+    marginTop: 16,
   },
   tabContent: {
     marginBottom: 32,

@@ -683,6 +683,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+    marginTop: 16,
+    marginBottom : 16,
+
   },
   skeletonContainer: {
     paddingHorizontal: 16,

@@ -329,35 +329,76 @@ const Profile: React.FC = () => {
 
       <ScrollView 
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            {student.studentPersonalDetails.studentPhoto ? (
-              <Image
-                source={{ uri: student.studentPersonalDetails.studentPhoto }}
-                style={styles.avatar}
-              />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Icon name="person" size={48} color="#FFFFFF" />
+        <View style={styles.profileHero}>
+          <View style={styles.heroGradient} />
+          <View style={styles.heroContent}>
+            <View style={styles.avatarContainer}>
+              {student.studentPersonalDetails.studentPhoto ? (
+                <Image
+                  source={{ uri: student.studentPersonalDetails.studentPhoto }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Icon name="person" size={48} color="#FFFFFF" />
+                </View>
+              )}
+              <View style={styles.verifiedBadge}>
+                <Icon name="verified" size={16} color="#4CAF50" />
               </View>
-            )}
-            <View style={styles.verifiedBadge}>
-              <Icon name="verified" size={16} color="#4CAF50" />
+            </View>
+            <Text style={styles.studentName}>{fullName}</Text>
+            <Text style={styles.studentSubtitle}>
+              {student.academicDetails.class} • {student.academicDetails.section || "Section"}
+            </Text>
+            <View style={styles.heroChips}>
+              <View style={styles.heroChip}>
+                <Icon name="badge" size={16} color="#1D4ED8" />
+                <Text style={styles.heroChipText}>
+                  Roll {student.academicDetails.rollNumber || "-"}
+                </Text>
+              </View>
+              <View style={styles.heroChip}>
+                <Icon name="favorite" size={16} color="#F43F5E" />
+                <Text style={styles.heroChipText}>
+                  Blood {student.studentPersonalDetails.bloodGroup || "-"}
+                </Text>
+              </View>
+              <View style={styles.heroChip}>
+                <Icon name="cake" size={16} color="#FB923C" />
+                <Text style={styles.heroChipText}>
+                  {student.studentPersonalDetails.dob
+                    ? formatDate(student.studentPersonalDetails.dob)
+                    : "DOB -"}
+                </Text>
+              </View>
             </View>
           </View>
-          
-          <Text style={styles.studentName}>{fullName}</Text>
-          <View style={styles.studentBadges}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{student.academicDetails.class}</Text>
-            </View>
-            <View style={styles.badge}>
-              <Icon name="badge" size={14} color="#2196F3" />
-              <Text style={styles.badgeText}>Roll No: {student.academicDetails.rollNumber}</Text>
-            </View>
+        </View>
+
+        {/* Quick Info */}
+        <View style={styles.quickInfoRow}>
+          <View style={styles.quickInfoCard}>
+            <Text style={styles.quickInfoLabel}>Admission No.</Text>
+            <Text style={styles.quickInfoValue}>
+              {student.academicDetails.admissionNumber || "-"}
+            </Text>
+          </View>
+          <View style={styles.quickInfoCard}>
+            <Text style={styles.quickInfoLabel}>Academic Year</Text>
+            <Text style={styles.quickInfoValue}>
+              {student.academicDetails.academicYear || "-"}
+            </Text>
+          </View>
+          <View style={styles.quickInfoCard}>
+            <Text style={styles.quickInfoLabel}>Parent Email</Text>
+            <Text style={styles.quickInfoValue}>
+              {student.parentDetails.email || "-"}
+            </Text>
           </View>
         </View>
 
@@ -383,6 +424,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  scrollContent: {
+    paddingBottom: 120,
   },
   // Loading State
   loadingContainer: {
@@ -419,18 +463,22 @@ const styles = StyleSheet.create({
   },
 
   // Profile Header
-  profileHeader: {
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
+  profileHero: {
     marginTop: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderRadius: 24,
+    overflow: "hidden",
+    backgroundColor: "#0F172A",
+    padding: 24,
+  },
+  heroGradient: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#0F172A",
+  },
+  heroContent: {
+    alignItems: "center",
+    gap: 8,
   },
   avatarContainer: {
     position: "relative",
@@ -469,56 +517,84 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#2c3e50",
+    color: "#FFFFFF",
     marginBottom: 8,
     textAlign: "center",
   },
-  studentBadges: {
+  studentSubtitle: {
+    fontSize: 15,
+    color: "#CBD5F5",
+  },
+  heroChips: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 10,
     justifyContent: "center",
-    gap: 8,
-    marginTop: 8,
+    marginTop: 6,
   },
-  badge: {
+  heroChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "rgba(255,255,255,0.08)",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 999,
+    gap: 6,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-    gap: 4,
+    borderColor: "rgba(255,255,255,0.2)",
   },
-  badgeText: {
+  heroChipText: {
+    color: "#F8FAFC",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  quickInfoRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  quickInfoCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5EAF0",
+    backgroundColor: "#FFFFFF",
+    padding: 14,
+  },
+  quickInfoLabel: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  quickInfoValue: {
     fontSize: 14,
-    color: "#333",
-    fontWeight: "500",
+    color: "#0F172A",
+    fontWeight: "600",
   },
 
   // Sections Container
   sectionsContainer: {
     marginBottom: 16,
+    marginTop: 16,
+
   },
 
   // Section Card
   sectionCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5EAF0",
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 18,
   },
   sectionTitleContainer: {
     flexDirection: "row",
@@ -527,30 +603,30 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: "700",
+    color: "#0F172A",
   },
   sectionContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
   },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#F0F4F8",
   },
   detailLabel: {
     fontSize: 14,
-    color: "#666",
+    color: "#6B7280",
     fontWeight: "500",
     flex: 1,
   },
   detailValue: {
     fontSize: 14,
-    color: "#333",
+    color: "#111827",
     fontWeight: "400",
     flex: 1,
     textAlign: "right",
