@@ -84,6 +84,15 @@ export interface Post {
   likeCount?: number;
 }
 
+export interface CommentType {
+  id: string;
+  text: string;
+  userName: string;
+  userProfile: string;
+  createdAt: any;
+  userId: string;
+}
+
 export interface Comment {
   id: string;
   text: string;
@@ -103,11 +112,13 @@ export interface Grade {
 }
 
 /** --------------------- Helper Functions --------------------- */
-const fetchUserClass = async (userId: string): Promise<{ classId: string, studentData: Student } | null> => {
+const fetchUserClass = async (
+  userId: string
+): Promise<{ classId: string; studentData: Student } | null> => {
   try {
     // Query all classes where the student exists
     const classesSnap = await getDocs(collection(db, "classes"));
-    
+
     // Create an array of promises to check each class
     const classChecks = classesSnap.docs.map(async (classDoc) => {
       const studentRef = doc(db, "classes", classDoc.id, "students", userId);
@@ -115,7 +126,7 @@ const fetchUserClass = async (userId: string): Promise<{ classId: string, studen
       if (studentSnap.exists()) {
         return {
           classId: classDoc.id,
-          studentData: { uid: userId, ...studentSnap.data() } as Student
+          studentData: { uid: userId, ...studentSnap.data() } as Student,
         };
       }
       return null;
@@ -123,7 +134,7 @@ const fetchUserClass = async (userId: string): Promise<{ classId: string, studen
 
     // Wait for all checks and find the first non-null result
     const results = await Promise.all(classChecks);
-    return results.find(result => result !== null) || null;
+    return results.find((result) => result !== null) || null;
   } catch (error) {
     console.error("Error fetching user class:", error);
     return null;
@@ -141,16 +152,26 @@ export const fetchUser = async (): Promise<Student | null> => {
   return userClass ? userClass.studentData : null;
 };
 
-export const fetchUserById = async (userId: string): Promise<Student | null> => {
+export const fetchUserById = async (
+  userId: string
+): Promise<Student | null> => {
   const userClass = await fetchUserClass(userId);
   return userClass ? userClass.studentData : null;
 };
 
-export const fetchStudentDoc = async (student: Student): Promise<Student | null> => {
+export const fetchStudentDoc = async (
+  student: Student
+): Promise<Student | null> => {
   try {
-    const studentRef = doc(db, "classes", student.studentClass, "students", student.uid);
+    const studentRef = doc(
+      db,
+      "classes",
+      student.studentClass,
+      "students",
+      student.uid
+    );
     const studentSnap = await getDoc(studentRef);
-    
+
     if (studentSnap.exists()) {
       const data = studentSnap.data() as Student;
       if (data.studentName === student.studentName) {
@@ -167,7 +188,9 @@ export const fetchStudentDoc = async (student: Student): Promise<Student | null>
 /** --------------------- Attendance --------------------- */
 export const fetchAttendance = async (
   studentData: Student,
-  setTodayAttendance?: React.Dispatch<React.SetStateAction<AttendanceRecord | null>>
+  setTodayAttendance?: React.Dispatch<
+    React.SetStateAction<AttendanceRecord | null>
+  >
 ): Promise<AttendanceRecord[]> => {
   try {
     // Query attendance for the specific class
@@ -175,7 +198,7 @@ export const fetchAttendance = async (
       collection(db, "attendance"),
       where("className", "==", studentData.studentClass)
     );
-    
+
     const snap = await getDocs(q);
     const today = format(new Date(), "yyyy-MM-dd");
     const records: AttendanceRecord[] = [];
@@ -183,12 +206,12 @@ export const fetchAttendance = async (
     snap.forEach((docSnap) => {
       const data = docSnap.data();
       const studentId = studentData.id || studentData.uid;
-      
+
       // Find student in attendance using array query
-      const studentRecord = data.students?.find((s: any) => 
-        s.id === studentId || s.uid === studentId
+      const studentRecord = data.students?.find(
+        (s: any) => s.id === studentId || s.uid === studentId
       );
-      
+
       if (studentRecord) {
         const record: AttendanceRecord = {
           id: docSnap.id,
@@ -196,7 +219,7 @@ export const fetchAttendance = async (
           status: studentRecord.status,
         };
         records.push(record);
-        
+
         // Set today's attendance if date matches
         if (data.date === today && setTodayAttendance) {
           setTodayAttendance(record);
@@ -219,25 +242,25 @@ export const fetchAttendanceForStudent = async (
     collection(db, "attendance"),
     where("className", "==", className)
   );
-  
+
   const snap = await getDocs(q);
   const records: AttendanceRecord[] = [];
-  
+
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-    const studentRecord = data.students?.find((s: any) => 
-      s.id === studentId || s.uid === studentId
+    const studentRecord = data.students?.find(
+      (s: any) => s.id === studentId || s.uid === studentId
     );
-    
+
     if (studentRecord) {
-      records.push({ 
-        id: docSnap.id, 
-        date: data.date, 
-        status: studentRecord.status 
+      records.push({
+        id: docSnap.id,
+        date: data.date,
+        status: studentRecord.status,
       });
     }
   });
-  
+
   return records;
 };
 
@@ -250,7 +273,7 @@ export const fetchAnnouncements = async (
     orderBy("createdAt", "desc"),
     limit(5)
   );
-  
+
   const snap = await getDocs(q);
   const today = new Date();
   let todayCount = 0;
@@ -260,7 +283,7 @@ export const fetchAnnouncements = async (
     const data = docSnap.data() as Announcement;
     data.id = docSnap.id;
     announcements.push(data);
-    
+
     // Check if announcement is from today
     if (data.createdAt && isSameDay(data.createdAt.toDate(), today)) {
       todayCount++;
@@ -270,29 +293,26 @@ export const fetchAnnouncements = async (
   if (setTodayAnnouncementsCount) {
     setTodayAnnouncementsCount(todayCount);
   }
-  
+
   return announcements;
 };
 
 export const fetchAllAnnouncements = async (): Promise<Announcement[]> => {
-  const q = query(
-    collection(db, "announcement"),
-    orderBy("createdAt", "desc")
-  );
-  
+  const q = query(collection(db, "announcement"), orderBy("createdAt", "desc"));
+
   const snap = await getDocs(q);
-  return snap.docs.map((docSnap) => ({ 
-    id: docSnap.id, 
-    ...docSnap.data() 
-  } as Announcement));
+  return snap.docs.map(
+    (docSnap) =>
+      ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      } as Announcement)
+  );
 };
 
 export const fetchEvents = async (): Promise<EventItem[]> => {
-  const q = query(
-    collection(db, "events"),
-    orderBy("createdAt", "desc")
-  );
-  
+  const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+
   const snap = await getDocs(q);
   return snap.docs.map((docSnap) => {
     const data = docSnap.data() as Announcement;
@@ -324,12 +344,8 @@ export const fetchHomework = async (
 
     const { classId } = userClass;
     const homeworkRef = collection(db, "classes", classId, "homework");
-    const q = query(
-      homeworkRef,
-      orderBy("updatedAt", "desc"),
-      limit(10)
-    );
-    
+    const q = query(homeworkRef, orderBy("updatedAt", "desc"), limit(10));
+
     const hwSnap = await getDocs(q);
     const today = new Date();
     let todayCount = 0;
@@ -344,11 +360,11 @@ export const fetchHomework = async (
         data.homeworks.forEach((hw: any) => {
           const itemDate = hw.date || hw.createdAt || data.date || new Date();
           const itemDateObj = new Date(itemDate);
-          
+
           if (isSameDay(itemDateObj, today)) {
             todayCount++;
           }
-          
+
           homework.push({
             ...hw,
             dateId,
@@ -358,18 +374,18 @@ export const fetchHomework = async (
             subject: hw.subject,
             date: itemDate,
             createdAt: hw.createdAt || data.createdAt,
-            updatedAt: hw.updatedAt || data.updatedAt
+            updatedAt: hw.updatedAt || data.updatedAt,
           });
         });
       } else {
         // Handle single homework entry
         const itemDate = data.date || data.createdAt || new Date();
         const itemDateObj = new Date(itemDate);
-        
+
         if (isSameDay(itemDateObj, today)) {
           todayCount++;
         }
-        
+
         homework.push({
           id: docSnap.id,
           classId,
@@ -379,7 +395,7 @@ export const fetchHomework = async (
           subject: data.subject,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
-          ...data
+          ...data,
         } as Homework);
       }
     });
@@ -394,7 +410,7 @@ export const fetchHomework = async (
     if (setTodayHomeworkCount) {
       setTodayHomeworkCount(todayCount);
     }
-    
+
     return homework;
   } catch (error) {
     console.error("Error fetching homework:", error);
@@ -411,7 +427,7 @@ export const fetchRecentHomework = async (
     orderBy("updatedAt", "desc"),
     limit(limitCount)
   );
-  
+
   const snap = await getDocs(q);
   let allHomework: Homework[] = [];
 
@@ -429,7 +445,7 @@ export const fetchRecentHomework = async (
         subject: hw.subject,
         date: hw.date || hw.createdAt || data.date || new Date(),
         createdAt: hw.createdAt || data.createdAt,
-        updatedAt: hw.updatedAt || data.updatedAt
+        updatedAt: hw.updatedAt || data.updatedAt,
       }));
       allHomework.push(...mapped);
     } else {
@@ -442,7 +458,7 @@ export const fetchRecentHomework = async (
         subject: data.subject,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
-        ...data
+        ...data,
       } as Homework);
     }
   });
@@ -453,7 +469,7 @@ export const fetchRecentHomework = async (
     const dateB = new Date(b.updatedAt || b.createdAt || b.date).getTime();
     return dateB - dateA;
   });
-  
+
   return allHomework.slice(0, limitCount);
 };
 
@@ -466,24 +482,27 @@ export const fetchGrades = async (): Promise<Grade[]> => {
   if (!userClass) return [];
 
   const { classId, studentData } = userClass;
-  
+
   // Get grades directly from student document
   const studentRef = doc(db, "classes", classId, "students", currentUser.uid);
   const studentSnap = await getDoc(studentRef);
-  
+
   if (studentSnap.exists()) {
     const grades = studentSnap.data()?.grades || [];
-    return grades.sort((a: Grade, b: Grade) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
+    return grades.sort(
+      (a: Grade, b: Grade) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   }
-  
+
   return [];
 };
 
 /** --------------------- Combined Fetch --------------------- */
 export const fetchAllData = async (
-  setTodayAttendance?: React.Dispatch<React.SetStateAction<AttendanceRecord | null>>,
+  setTodayAttendance?: React.Dispatch<
+    React.SetStateAction<AttendanceRecord | null>
+  >,
   setTodayAnnouncementsCount?: React.Dispatch<React.SetStateAction<number>>,
   setTodayHomeworkCount?: React.Dispatch<React.SetStateAction<number>>
 ) => {
@@ -494,58 +513,51 @@ export const fetchAllData = async (
   const [attendance, announcements, homework] = await Promise.all([
     fetchAttendance(user, setTodayAttendance),
     fetchAnnouncements(setTodayAnnouncementsCount),
-    fetchHomework(setTodayHomeworkCount)
+    fetchHomework(setTodayHomeworkCount),
   ]);
 
-  return { 
-    studentData: user, 
-    attendance, 
-    announcements, 
-    homework 
+  return {
+    studentData: user,
+    attendance,
+    announcements,
+    homework,
   };
 };
 
 /** --------------------- Posts & Teacher --------------------- */
 export const fetchPosts = async (): Promise<Post[]> => {
-  const q = query(
-    collection(db, "posts"),
-    orderBy("createdAt", "desc")
-  );
-  
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+
   const snap = await getDocs(q);
-  return snap.docs.map((docSnap) => ({ 
-    id: docSnap.id, 
-    ...docSnap.data() 
-  } as Post));
+  return snap.docs.map(
+    (docSnap) =>
+      ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      } as Post)
+  );
 };
 
 export const fetchTeacher = async (id: string): Promise<any | null> => {
-  const q = query(
-    collection(db, "teachers"),
-    where("id", "==", id),
-    limit(1)
-  );
-  
+  const q = query(collection(db, "teachers"), where("id", "==", id), limit(1));
+
   const snap = await getDocs(q);
-  
+
   if (!snap.empty) {
     const doc = snap.docs[0];
-    return { 
-      id: doc.id, 
-      ...doc.data() 
+    return {
+      id: doc.id,
+      ...doc.data(),
     };
   }
-  
+
   return null;
 };
 
 /** --------------------- Realtime Posts --------------------- */
 export const fetchPostsRealtime = (callback: (posts: Post[]) => void) => {
-  const q = query(
-    collection(db, "posts"),
-    orderBy("createdAt", "desc")
-  );
-  
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+
   return onSnapshot(q, (snapshot) => {
     const posts: Post[] = snapshot.docs.map((docSnap) => {
       const data = docSnap.data();
@@ -559,7 +571,7 @@ export const fetchPostsRealtime = (callback: (posts: Post[]) => void) => {
         mediaUrls: data.mediaUrls || [],
         likes: data.likes || {},
         likeCount: data.likes ? Object.keys(data.likes).length : 0,
-        comments: []
+        comments: [],
       } as Post;
     });
     callback(posts);
@@ -567,15 +579,18 @@ export const fetchPostsRealtime = (callback: (posts: Post[]) => void) => {
 };
 
 /** --------------------- Post Actions --------------------- */
-export const toggleLike = async (postId: string, userId: string): Promise<void> => {
+export const toggleLike = async (
+  postId: string,
+  userId: string
+): Promise<void> => {
   const ref = doc(db, "posts", postId);
   const snap = await getDoc(ref);
-  
+
   if (!snap.exists()) return;
 
   const data = snap.data() as Post;
   const likes = data.likes || {};
-  
+
   if (likes[userId]) {
     delete likes[userId];
   } else {
@@ -585,7 +600,11 @@ export const toggleLike = async (postId: string, userId: string): Promise<void> 
   await updateDoc(ref, { likes });
 };
 
-export const addComment = async (postId: string, userId: string, text: string): Promise<void> => {
+export const addComment = async (
+  postId: string,
+  userId: string,
+  text: string
+): Promise<void> => {
   await addDoc(collection(db, "posts", postId, "comments"), {
     text,
     userId,
@@ -593,47 +612,73 @@ export const addComment = async (postId: string, userId: string, text: string): 
   });
 };
 
-export const markPostViewed = async (userId: string, postId: string): Promise<void> => {
-  await setDoc(
-    doc(db, "students", userId, "viewedPosts", postId), 
-    { viewedAt: serverTimestamp() }
+export const listenToComments = (
+  postId: string,
+  callback: (comments: CommentType[]) => void
+) => {
+  const q = query(
+    collection(db, "posts", postId, "comments"),
+    orderBy("createdAt", "asc")
   );
+
+  return onSnapshot(q, (snapshot) => {
+    const comments: CommentType[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as CommentType[];
+
+    callback(comments);
+  });
+};
+
+export const markPostViewed = async (
+  userId: string,
+  postId: string
+): Promise<void> => {
+  await setDoc(doc(db, "students", userId, "viewedPosts", postId), {
+    viewedAt: serverTimestamp(),
+  });
 };
 
 export const getViewedPosts = async (userId: string): Promise<string[]> => {
-  const snap = await getDocs(
-    collection(db, "students", userId, "viewedPosts")
-  );
-  
+  const snap = await getDocs(collection(db, "students", userId, "viewedPosts"));
+
   return snap.docs.map((docSnap) => docSnap.id);
 };
 
 /** --------------------- Additional Optimized Functions --------------------- */
-export const fetchTodayAttendanceCount = async (className: string): Promise<number> => {
+export const fetchTodayAttendanceCount = async (
+  className: string
+): Promise<number> => {
   const today = format(new Date(), "yyyy-MM-dd");
   const q = query(
     collection(db, "attendance"),
     where("className", "==", className),
     where("date", "==", today)
   );
-  
+
   const snap = await getDocs(q);
   return snap.size;
 };
 
-export const fetchClassStudents = async (className: string): Promise<Student[]> => {
-  const q = query(
-    collection(db, "classes", className, "students")
-  );
-  
+export const fetchClassStudents = async (
+  className: string
+): Promise<Student[]> => {
+  const q = query(collection(db, "classes", className, "students"));
+
   const snap = await getDocs(q);
-  return snap.docs.map((docSnap) => ({
-    uid: docSnap.id,
-    ...docSnap.data()
-  } as Student));
+  return snap.docs.map(
+    (docSnap) =>
+      ({
+        uid: docSnap.id,
+        ...docSnap.data(),
+      } as Student)
+  );
 };
 
-export const fetchUpcomingEvents = async (limitCount: number = 5): Promise<EventItem[]> => {
+export const fetchUpcomingEvents = async (
+  limitCount: number = 5
+): Promise<EventItem[]> => {
   const today = new Date();
   const q = query(
     collection(db, "events"),
@@ -641,7 +686,7 @@ export const fetchUpcomingEvents = async (limitCount: number = 5): Promise<Event
     orderBy("startDate", "asc"),
     limit(limitCount)
   );
-  
+
   const snap = await getDocs(q);
   return snap.docs.map((docSnap) => {
     const data = docSnap.data();
@@ -668,13 +713,13 @@ export const fetchHomeworkByDate = async (
     where("date", "==", date),
     orderBy("updatedAt", "desc")
   );
-  
+
   const snap = await getDocs(q);
   const homework: Homework[] = [];
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-    
+
     if (Array.isArray(data.homeworks) && data.homeworks.length > 0) {
       data.homeworks.forEach((hw: any) => {
         homework.push({
@@ -684,7 +729,7 @@ export const fetchHomeworkByDate = async (
           id: hw.createdAt || Math.random().toString(),
           date: hw.date || data.date,
           createdAt: hw.createdAt || data.createdAt,
-          updatedAt: hw.updatedAt || data.updatedAt
+          updatedAt: hw.updatedAt || data.updatedAt,
         });
       });
     } else {
@@ -697,7 +742,7 @@ export const fetchHomeworkByDate = async (
         subject: data.subject,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
-        ...data
+        ...data,
       } as Homework);
     }
   });

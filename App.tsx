@@ -18,36 +18,37 @@ import Profile from "./src/Screens/Profile";
 import Settings from "./src/Screens/Settings";
 import BottomNavigation from "./src/Components/BottomNavigation";
 import Homework from "./src/Screens/HomeWork";
+import { LoaderProvider } from "./src/Context/LoaderContext/LoaderContext";
 
 const Stack = createNativeStackNavigator();
-const TAB_SCREENS = ['Dashboard', 'Gallery', 'Profile', 'Settings'];
 
-// Main Layout component that includes BottomNavigation
-const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <View style={styles.mainContainer}>
-      <View style={styles.contentContainer}>
-        {children}
-      </View>
-      <BottomNavigation />
-    </View>
-  );
-};
+// Screens that should have BottomNavigation
+const USER_SCREENS = [
+  "Dashboard",
+  "Gallery",
+  "Profile",
+  "Settings",
+  "Attendance",
+  "Homework",
+  "Announcement",
+  "Grades",
+  "Events",
+];
 
-// Wrapper for screens that should show BottomNavigation
-const withBottomNavigation = (ScreenComponent: React.ComponentType<any>) => {
-  return (props: any) => (
-    <MainLayout>
-      <ScreenComponent {...props} />
-    </MainLayout>
-  );
-};
+// Layout wrapper
+const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <View style={styles.mainContainer}>
+    <View style={styles.contentContainer}>{children}</View>
+    <BottomNavigation />
+  </View>
+);
 
-// Create wrapped versions of the main screens
-const DashboardWithNav = withBottomNavigation(Dashboard);
-const GalleryWithNav = withBottomNavigation(Gallery);
-const ProfileWithNav = withBottomNavigation(Profile);
-const SettingsWithNav = withBottomNavigation(Settings);
+// Higher Order Component to wrap screens with BottomNavigation
+const withBottomNav = (Component: React.ComponentType<any>) => (props: any) => (
+  <MainLayout>
+    <Component {...props} />
+  </MainLayout>
+);
 
 const App = () => {
   const [user, setUser] = useState<any>(null);
@@ -64,7 +65,7 @@ const App = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -72,33 +73,61 @@ const App = () => {
 
   return (
     <PaperProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            animation: TAB_SCREENS.includes(route.name) ? 'none' : 'slide_from_right',
-          })}
-        >
-          {user ? (
-            <>
-              {/* Main screens with BottomNavigation */}
-              <Stack.Screen name="Dashboard" component={DashboardWithNav} />
-              <Stack.Screen name="Gallery" component={GalleryWithNav} />
-              <Stack.Screen name="Profile" component={ProfileWithNav} />
-              <Stack.Screen name="Settings" component={SettingsWithNav} />
-              
-              {/* Other screens without BottomNavigation */}
-              <Stack.Screen name="Attendance" component={Attendance} />
-              <Stack.Screen name="Homework" component={Homework} />
-              <Stack.Screen name="Announcement" component={AnnouncementScreen} />
-              <Stack.Screen name="Grades" component={Grades} />
-              <Stack.Screen name="Events" component={Events} />
-            </>
-          ) : (
-            <Stack.Screen name="Login" component={LoginScreen} />
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <LoaderProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={({ route }) => ({
+              headerShown: false,
+              animation: USER_SCREENS.includes(route.name)
+                ? "none"
+                : "slide_from_right",
+            })}
+          >
+            {user ? (
+              <>
+                <Stack.Screen
+                  name="Dashboard"
+                  component={withBottomNav(Dashboard)}
+                />
+                <Stack.Screen
+                  name="Gallery"
+                  component={withBottomNav(Gallery)}
+                />
+                <Stack.Screen
+                  name="Profile"
+                  component={withBottomNav(Profile)}
+                />
+                <Stack.Screen
+                  name="Settings"
+                  component={withBottomNav(Settings)}
+                />
+                <Stack.Screen
+                  name="Attendance"
+                  component={withBottomNav(Attendance)}
+                />
+                <Stack.Screen
+                  name="Homework"
+                  component={withBottomNav(Homework)}
+                />
+                <Stack.Screen
+                  name="Announcement"
+                  component={withBottomNav(AnnouncementScreen)}
+                />
+                <Stack.Screen
+                  name="Grades"
+                  component={withBottomNav(Grades)}
+                />
+                <Stack.Screen
+                  name="Events"
+                  component={withBottomNav(Events)}
+                />
+              </>
+            ) : (
+              <Stack.Screen name="Login" component={LoginScreen} />
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </LoaderProvider>
     </PaperProvider>
   );
 };
@@ -106,10 +135,15 @@ const App = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   contentContainer: {
     flex: 1,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

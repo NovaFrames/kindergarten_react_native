@@ -14,17 +14,20 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  Keyboard
 } from 'react-native';
-import { 
-  fetchPostsRealtime, 
-  Post, 
-  fetchTeacher, 
-  toggleLike, 
+import {
+  fetchPostsRealtime,
+  Post,
+  fetchTeacher,
+  toggleLike,
   addComment,
   fetchUser,
   Comment as CommentType,
-  fetchPosts as fetchPostsStatic
+  fetchPosts as fetchPostsStatic,
+  listenToComments,
+  fetchUserById
 } from '../Service/functions';
 import { format, isToday } from 'date-fns';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -32,6 +35,14 @@ import ScreenHeader from '../Components/ScreenHeader';
 import HeaderNotificationButton from '../Components/HeaderNotificationButton';
 
 const { width, height } = Dimensions.get('window');
+
+export interface Student {
+  uid: string;
+  id?: string;
+  studentName: string;
+  studentClass: string;
+  [key: string]: any;
+}
 
 const Gallery: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -42,6 +53,7 @@ const Gallery: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [commentUsers, setCommentUsers] = useState<Record<string, Student | null>>({});
   const [commentLoading, setCommentLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
@@ -67,7 +79,9 @@ const Gallery: React.FC = () => {
   const setupRealtimePosts = () => {
     return fetchPostsRealtime(async (fetchedPosts) => {
       try {
-        // Fetch teacher names for new posts
+        /** ---------------------------
+         * 1. Fetch Teacher Names
+         * --------------------------- */
         const newTeacherNames = { ...teacherNames };
         const teacherPromises = fetchedPosts.map(async (post) => {
           if (!newTeacherNames[post.teacherId] && post.teacherId) {
@@ -84,13 +98,32 @@ const Gallery: React.FC = () => {
         });
 
         await Promise.all(teacherPromises);
-        
         setTeacherNames(newTeacherNames);
+
+        /** ---------------------------
+         * 2. Set Posts
+         * --------------------------- */
         setPosts(fetchedPosts);
-        
+
+        /** ---------------------------
+         * 3. 🔥 Listen to Comments for each post
+         * --------------------------- */
+        for (const post of fetchedPosts) {
+          listenToComments(post.id, (comments) => {
+            setPostComments(prev => ({
+              ...prev,
+              [post.id]: comments
+            }));
+          });
+        }
+
+        /** ---------------------------
+         * 4. Finish Loading
+         * --------------------------- */
         if (loading) setLoading(false);
         if (refreshing) setRefreshing(false);
         setError(null);
+
       } catch (err) {
         console.error('Error processing posts:', err);
         setError('Failed to load posts');
@@ -100,6 +133,41 @@ const Gallery: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    const fetchUsersForComments = async () => {
+      const allUserIds = new Set<string>();
+      Object.values(postComments).forEach(comments => {
+        comments.forEach(comment => {
+          if (!commentUsers[comment.userId]) {
+            allUserIds.add(comment.userId);
+          }
+        });
+      });
+
+      const promises = Array.from(allUserIds).map(async userId => {
+        try {
+          const user = await fetchUserById(userId);
+          return { userId, user };
+        } catch {
+          return { userId, user: null };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      const newUsers: Record<string, Student | null> = {};
+      results.forEach(r => {
+        newUsers[r.userId] = r.user;
+      });
+
+      setCommentUsers(prev => ({ ...prev, ...newUsers }));
+    };
+
+    if (Object.keys(postComments).length > 0) {
+      fetchUsersForComments();
+    }
+  }, [postComments]);
+
+
   const onRefresh = () => {
     setRefreshing(true);
     // Real-time listener will update automatically
@@ -107,13 +175,13 @@ const Gallery: React.FC = () => {
 
   const handleLikePress = async (postId: string) => {
     if (!currentUser?.uid || likingPostId) return;
-    
+
     try {
       setLikingPostId(postId);
       await toggleLike(postId, currentUser.uid);
-      
+
       // Update local state
-      setPosts(prevPosts => 
+      setPosts(prevPosts =>
         prevPosts.map(post => {
           if (post.id === postId) {
             const likes = { ...post.likes };
@@ -122,10 +190,10 @@ const Gallery: React.FC = () => {
             } else {
               likes[currentUser.uid] = true;
             }
-            return { 
-              ...post, 
-              likes, 
-              likeCount: Object.keys(likes).length 
+            return {
+              ...post,
+              likes,
+              likeCount: Object.keys(likes).length
             };
           }
           return post;
@@ -145,7 +213,7 @@ const Gallery: React.FC = () => {
     try {
       setCommentLoading(true);
       await addComment(selectedPost.id, currentUser.uid, newComment.trim());
-      
+
       // Add comment to local state
       const newCommentObj: CommentType = {
         id: Date.now().toString(),
@@ -153,12 +221,12 @@ const Gallery: React.FC = () => {
         userId: currentUser.uid,
         createdAt: new Date()
       };
-      
+
       setPostComments(prev => ({
         ...prev,
         [selectedPost.id]: [...(prev[selectedPost.id] || []), newCommentObj]
       }));
-      
+
       setNewComment('');
       Alert.alert('Success', 'Comment added successfully');
     } catch (err) {
@@ -174,17 +242,17 @@ const Gallery: React.FC = () => {
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       if (isNaN(date.getTime())) return '';
-      
+
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
       const diffHours = Math.floor(diffMs / 3600000);
-      
+
       if (diffHours < 24) {
         if (diffHours < 1) return 'Just now';
         if (diffHours === 1) return '1 hour ago';
         return `${diffHours} hours ago`;
       }
-      
+
       return format(date, 'MMM d, yyyy • h:mm a');
     } catch {
       return '';
@@ -194,7 +262,7 @@ const Gallery: React.FC = () => {
   const renderMediaGrid = (post: Post) => {
     const images = post.mediaUrls?.filter(media => media.type === 'image') || [];
     const videos = post.mediaUrls?.filter(media => media.type === 'video') || [];
-    
+
     if (images.length === 0 && videos.length === 0) {
       return (
         <View style={styles.noMediaContainer}>
@@ -293,7 +361,7 @@ const Gallery: React.FC = () => {
             )}
           </TouchableOpacity>
         ))}
-        
+
         {/* Show video count if any videos exist */}
         {videos.length > 0 && (
           <View style={styles.videoBadge}>
@@ -305,9 +373,9 @@ const Gallery: React.FC = () => {
     );
   };
 
-  const renderComments = (postId: string) => {
+  const renderComments = (postId: string, inModal: boolean = false) => {
     const comments = postComments[postId] || [];
-    
+
     if (comments.length === 0) {
       return (
         <View style={styles.noCommentsContainer}>
@@ -318,26 +386,46 @@ const Gallery: React.FC = () => {
       );
     }
 
+    // Determine which comments to show
+    let commentsToShow = comments;
+
+    if (!inModal) {
+      // Normal feed: only show last comment
+      commentsToShow = comments.slice(-1);
+    }
+
     return (
       <View style={styles.commentsList}>
-        {comments.slice(-3).reverse().map((comment, index) => (
-          <View key={`${comment.id}-${index}`} style={styles.commentItem}>
-            <View style={styles.commentBubble}>
-              <Text style={styles.commentText}>{comment.text}</Text>
-              <Text style={styles.commentTime}>
-                {formatDate(comment.createdAt)}
-              </Text>
+        {commentsToShow.map((comment, index) => {
+          const user = commentUsers[comment.userId];
+          const userName = user?.firstName + user?.lastName || 'User';
+
+          return (
+            <View key={`${comment.id}-${index}`} style={styles.commentItem}>
+              <View style={styles.commentBubble}>
+                <Text style={styles.commentAuthor}>{userName}</Text>
+                <Text style={styles.commentText}>{comment.text}</Text>
+                <Text style={styles.commentTime}>{formatDate(comment.createdAt)}</Text>
+              </View>
             </View>
-          </View>
-        ))}
-        {comments.length > 3 && (
-          <Text style={styles.moreCommentsText}>
-            +{comments.length - 3} more comment{comments.length - 3 !== 1 ? 's' : ''}
+          );
+        })}
+
+        {!inModal && comments.length > 1 && (
+          <Text onPress={() => {
+            Keyboard.dismiss();
+            setCommentModalVisible(true);
+          }} style={[styles.moreCommentsText, { color: '#0088ffff' }]}>
+            +{comments.length - 1} more comment{comments.length - 1 !== 1 ? 's' : ''}
           </Text>
         )}
       </View>
     );
+
   };
+
+
+
 
   const getLikeCount = (post: Post) => {
     if (post.likeCount !== undefined) return post.likeCount;
@@ -415,6 +503,7 @@ const Gallery: React.FC = () => {
               style={styles.statIconItem}
               onPress={() => {
                 setSelectedPost(post);
+                Keyboard.dismiss();
                 setCommentModalVisible(true);
               }}
             >
@@ -422,17 +511,17 @@ const Gallery: React.FC = () => {
               <Text style={styles.statCount}>{commentCount}</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.actionButton, isLiked && styles.likedButton]}
               onPress={() => handleLikePress(post.id)}
               disabled={!currentUser?.uid || likingPostId === post.id}
             >
-              <Icon 
-                name={isLiked ? "favorite" : "favorite-border"} 
-                size={20} 
-                color={isLiked ? "#F44336" : "#666"} 
+              <Icon
+                name={isLiked ? "favorite" : "favorite-border"}
+                size={20}
+                color={isLiked ? "#F44336" : "#666"}
               />
               <Text style={[styles.actionText, isLiked && styles.likedText]}>
                 {isLiked ? 'Liked' : 'Like'}
@@ -446,6 +535,7 @@ const Gallery: React.FC = () => {
               style={styles.actionButton}
               onPress={() => {
                 setSelectedPost(post);
+                Keyboard.dismiss();
                 setCommentModalVisible(true);
               }}
             >
@@ -455,12 +545,13 @@ const Gallery: React.FC = () => {
           </View>
         </View>
 
-        {/* Comments Preview */}
+        {/* Comments Preview in Feed */}
         {postComments[post.id] && postComments[post.id].length > 0 && (
           <View style={styles.commentsPreview}>
-            {renderComments(post.id)}
+            {renderComments(post.id, false)}
           </View>
         )}
+
       </View>
     );
   };
@@ -502,7 +593,7 @@ const Gallery: React.FC = () => {
           <Icon name="error-outline" size={48} color="#F44336" />
           <Text style={styles.errorTitle}>Unable to Load Posts</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={async () => {
               setRefreshing(true);
@@ -609,8 +700,9 @@ const Gallery: React.FC = () => {
               </TouchableOpacity>
             </View>
 
+            {/* Comments in Modal */}
             <ScrollView style={styles.modalCommentsList}>
-              {selectedPost && renderComments(selectedPost.id)}
+              {selectedPost && renderComments(selectedPost.id, true)}
             </ScrollView>
 
             <View style={styles.commentInputContainer}>
@@ -684,7 +776,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     marginTop: 16,
-    marginBottom : 16,
+    marginBottom: 16,
 
   },
   skeletonContainer: {
@@ -1069,6 +1161,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
     lineHeight: 20,
+  },
+  commentAuthor: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E3A8A',
+    marginBottom: 2,
   },
   commentTime: {
     fontSize: 11,
