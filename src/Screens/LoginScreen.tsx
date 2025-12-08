@@ -17,68 +17,79 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 
-// Foreground notifications
+// Foreground notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
   }),
 });
+
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    registerForPushNotifications();
+    registerForPushNotificationsAsync();
   }, []);
 
-  const registerForPushNotifications = async () => {
+  // Ask Permission + Create Notification Channel
+  const registerForPushNotificationsAsync = async () => {
     if (!Device.isDevice) {
-      alert("Physical device required for push notifications");
+      alert("Must use physical device for Push Notifications!");
       return;
     }
 
-    const { status } = await Notifications.getPermissionsAsync();
-    let finalStatus = status;
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-    if (status !== "granted") {
-      const reqStatus = await Notifications.requestPermissionsAsync();
-      finalStatus = reqStatus.status;
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
     }
 
     if (finalStatus !== "granted") {
-      alert("Permission not granted for notifications!");
+      alert("Push Notification permission not granted!");
+      return;
+    }
+
+    // Android Channel for high priority notifications
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
     }
   };
 
-  // Save FCM Token
-  const saveFCMToken = async (uid: string) => {
+  // Save Push Token in Firestore
+  const savePushToken = async (uid: string) => {
     try {
-      const tokenData = await Notifications.getDevicePushTokenAsync();
-      const fcmToken = tokenData.data;
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      console.log("Expo Push Token:", token);
 
       await setDoc(
         doc(db, "fcmtokens", uid),
         {
           uid,
-          fcmToken,
+          expoPushToken: token,
           platform: Platform.OS,
           updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
-
-      console.log("FCM Token Saved:", fcmToken);
     } catch (error) {
-      console.log("FCM Token Error:", error);
+      console.log("Error saving token:", error);
     }
   };
 
-  // Login + Store Token
+  // Login Function
   const handleLogin = async () => {
     try {
       setLoading(true);
@@ -89,9 +100,9 @@ const LoginScreen = () => {
         password
       );
 
-      await saveFCMToken(response.user.uid);
+      await savePushToken(response.user.uid);
 
-      alert("Login Success + Token Stored!");
+      alert("Login Successful!");
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -166,7 +177,7 @@ const LoginScreen = () => {
             </TouchableOpacity>
 
             <Text style={styles.helperText}>
-              Having trouble signing in? Contact school teacher.
+              Having trouble signing in? Contact the teacher.
             </Text>
           </View>
 
@@ -183,7 +194,9 @@ const LoginScreen = () => {
 
 export default LoginScreen;
 
-// Styles remain the same ⬇
+// ------------------------------------------------------------------
+// STYLES REMAIN THE SAME (your original styles)
+// ------------------------------------------------------------------
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F2F7FD" },
   container: { flex: 1, paddingHorizontal: 24, paddingVertical: 32 },

@@ -14,7 +14,9 @@
     },
     "platforms": ["ios", "android", "web"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kindergartenreactnative.App",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "useNextNotificationsApi": true,
@@ -22,13 +24,23 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.naveen2112.MyFirstApp"
+      "googleServicesFile": "./android/app/google-services.json",
+      "package": "com.kindergartenreactnative.App"
     },
     "plugins": [
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/notification.wav"]
+        }
+      ]
     ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#ffffff"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
