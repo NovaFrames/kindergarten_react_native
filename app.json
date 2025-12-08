@@ -23,7 +23,6 @@
       "googleServicesFile": "./credentials/google-services.json"
     },
     "android": {
-      "useNextNotificationsApi": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -37,11 +36,10 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": [
-            "./assets/notification.wav"
-          ]
+          "sounds": []
         }
-      ]
+      ],
+      "expo-font"
     ],
     "notification": {
       "icon": "./assets/notification-icon.png",
