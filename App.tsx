@@ -18,7 +18,6 @@ import Profile from "./src/Screens/Profile";
 import Settings from "./src/Screens/Settings";
 import BottomNavigation from "./src/Components/BottomNavigation";
 import Homework from "./src/Screens/HomeWork";
-import { LoaderProvider } from "./src/Context/LoaderContext/LoaderContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -73,61 +72,59 @@ const App = () => {
 
   return (
     <PaperProvider>
-      <LoaderProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={({ route }) => ({
-              headerShown: false,
-              animation: USER_SCREENS.includes(route.name)
-                ? "none"
-                : "slide_from_right",
-            })}
-          >
-            {user ? (
-              <>
-                <Stack.Screen
-                  name="Dashboard"
-                  component={withBottomNav(Dashboard)}
-                />
-                <Stack.Screen
-                  name="Gallery"
-                  component={withBottomNav(Gallery)}
-                />
-                <Stack.Screen
-                  name="Profile"
-                  component={withBottomNav(Profile)}
-                />
-                <Stack.Screen
-                  name="Settings"
-                  component={withBottomNav(Settings)}
-                />
-                <Stack.Screen
-                  name="Attendance"
-                  component={withBottomNav(Attendance)}
-                />
-                <Stack.Screen
-                  name="Homework"
-                  component={withBottomNav(Homework)}
-                />
-                <Stack.Screen
-                  name="Announcement"
-                  component={withBottomNav(AnnouncementScreen)}
-                />
-                <Stack.Screen
-                  name="Grades"
-                  component={withBottomNav(Grades)}
-                />
-                <Stack.Screen
-                  name="Events"
-                  component={withBottomNav(Events)}
-                />
-              </>
-            ) : (
-              <Stack.Screen name="Login" component={LoginScreen} />
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
-      </LoaderProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            animation: USER_SCREENS.includes(route.name)
+              ? "none"
+              : "slide_from_right",
+          })}
+        >
+          {user ? (
+            <>
+              <Stack.Screen
+                name="Dashboard"
+                component={withBottomNav(Dashboard)}
+              />
+              <Stack.Screen
+                name="Gallery"
+                component={withBottomNav(Gallery)}
+              />
+              <Stack.Screen
+                name="Profile"
+                component={withBottomNav(Profile)}
+              />
+              <Stack.Screen
+                name="Settings"
+                component={withBottomNav(Settings)}
+              />
+              <Stack.Screen
+                name="Attendance"
+                component={withBottomNav(Attendance)}
+              />
+              <Stack.Screen
+                name="Homework"
+                component={withBottomNav(Homework)}
+              />
+              <Stack.Screen
+                name="Announcement"
+                component={withBottomNav(AnnouncementScreen)}
+              />
+              <Stack.Screen
+                name="Grades"
+                component={withBottomNav(Grades)}
+              />
+              <Stack.Screen
+                name="Events"
+                component={withBottomNav(Events)}
+              />
+            </>
+          ) : (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
     </PaperProvider>
   );
 };
