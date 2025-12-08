@@ -17,7 +17,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 
-// Handle notification behavior when app is foregrounded
+// Foreground notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -27,7 +27,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
-
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,66 +36,64 @@ const LoginScreen = () => {
     registerForPushNotifications();
   }, []);
 
-  // 🚀 Request Notification Permission + Register Device
   const registerForPushNotifications = async () => {
     if (!Device.isDevice) {
-      alert("Push notifications require a physical device!");
+      alert("Physical device required for push notifications");
       return;
     }
 
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    const { status } = await Notifications.getPermissionsAsync();
+    let finalStatus = status;
 
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    if (status !== "granted") {
+      const reqStatus = await Notifications.requestPermissionsAsync();
+      finalStatus = reqStatus.status;
     }
 
     if (finalStatus !== "granted") {
-      alert("Permission for notifications not granted!");
-      return;
+      alert("Permission not granted for notifications!");
     }
   };
 
-  // 📌 Save Expo Token After Login
-  const saveExpoPushToken = async (uid: string) => {
+  // Save FCM Token
+  const saveFCMToken = async (uid: string) => {
     try {
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      const tokenData = await Notifications.getDevicePushTokenAsync();
+      const fcmToken = tokenData.data;
 
       await setDoc(
-        doc(db, "expoTokens", uid),
+        doc(db, "fcmtokens", uid),
         {
           uid,
-          expoPushToken: token,
+          fcmToken,
           platform: Platform.OS,
           updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
 
-      console.log("Expo Token saved:", token);
+      console.log("FCM Token Saved:", fcmToken);
     } catch (error) {
-      console.log("Error saving token:", error);
+      console.log("FCM Token Error:", error);
     }
   };
 
-  // 🔐 Login + Token Save
+  // Login + Store Token
   const handleLogin = async () => {
     try {
       setLoading(true);
 
-      const res = await signInWithEmailAndPassword(
+      const response = await signInWithEmailAndPassword(
         auth,
         email.trim(),
         password
       );
 
-      await saveExpoPushToken(res.user.uid);
+      await saveFCMToken(response.user.uid);
 
-      alert("Login Success + Token Stored");
-    } catch (error: any) {
-      alert(error.message);
+      alert("Login Success + Token Stored!");
+    } catch (err: any) {
+      alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -169,7 +166,7 @@ const LoginScreen = () => {
             </TouchableOpacity>
 
             <Text style={styles.helperText}>
-              Having trouble signing in? Reach out to your class teacher.
+              Having trouble signing in? Contact school teacher.
             </Text>
           </View>
 
@@ -186,16 +183,10 @@ const LoginScreen = () => {
 
 export default LoginScreen;
 
+// Styles remain the same ⬇
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#F2F7FD",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-  },
+  safeArea: { flex: 1, backgroundColor: "#F2F7FD" },
+  container: { flex: 1, paddingHorizontal: 24, paddingVertical: 32 },
   heroWrapper: {
     height: 200,
     justifyContent: "center",
@@ -211,25 +202,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#BFDBFE",
     opacity: 0.4,
   },
-  heroContent: {
-    alignItems: "center",
-  },
-  brandLogo: {
-    width: 90,
-    height: 90,
-    marginBottom: 12,
-  },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  brandSubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-  },
+  heroContent: { alignItems: "center" },
+  brandLogo: { width: 90, height: 90, marginBottom: 12 },
+  brandTitle: { fontSize: 24, fontWeight: "700", color: "#1E293B" },
+  brandSubtitle: { marginTop: 8, fontSize: 14, color: "#64748B", textAlign: "center" },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -240,32 +216,11 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 6,
   },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#475569",
-    marginBottom: 6,
-  },
-  inputLabelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  forgotText: {
-    fontSize: 13,
-    color: "#4C74FF",
-    fontWeight: "600",
-  },
+  cardTitle: { fontSize: 22, fontWeight: "700", color: "#1E293B", marginBottom: 16 },
+  inputGroup: { marginBottom: 18 },
+  inputLabel: { fontSize: 14, fontWeight: "600", color: "#475569", marginBottom: 6 },
+  inputLabelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  forgotText: { fontSize: 13, color: "#4C74FF", fontWeight: "600" },
   input: {
     borderWidth: 1,
     borderColor: "#E2E8F0",
@@ -284,27 +239,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 4,
   },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  helperText: {
-    marginTop: 16,
-    fontSize: 13,
-    color: "#94A3B8",
-    textAlign: "center",
-  },
-  secondaryButton: {
-    marginTop: 24,
-    alignSelf: "center",
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    color: "#1E40AF",
-    fontWeight: "600",
-  },
+  buttonDisabled: { opacity: 0.7 },
+  buttonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "600" },
+  helperText: { marginTop: 16, fontSize: 13, color: "#94A3B8", textAlign: "center" },
+  secondaryButton: { marginTop: 24, alignSelf: "center" },
+  secondaryButtonText: { fontSize: 15, color: "#1E40AF", fontWeight: "600" },
 });

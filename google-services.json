@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "540183968829",
+    "project_id": "kindergarten-d5db8",
+    "storage_bucket": "kindergarten-d5db8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540183968829:android:708ea1215e7bca70a47e54",
+        "android_client_info": {
+          "package_name": "com.kindergarten.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJ-kTUZ0VsYeKpzPqdnE8VcYAit10LB2Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540183968829:android:5ac567be83186573a47e54",
+        "android_client_info": {
+          "package_name": "com.kindergarten.name"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJ-kTUZ0VsYeKpzPqdnE8VcYAit10LB2Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
