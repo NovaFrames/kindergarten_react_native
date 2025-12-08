@@ -115,7 +115,7 @@ const LoginScreen = () => {
                 source={require("../../assets/icon.png")}
                 resizeMode="contain"
               />
-              <Text style={styles.brandTitle}>Project XXX</Text>
+              <Text style={styles.brandTitle}>Project</Text>
               <Text style={styles.brandSubtitle}>
                 Welcome back! Please sign in to stay updated.
               </Text>
