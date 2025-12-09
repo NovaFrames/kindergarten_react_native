@@ -6,28 +6,18 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.kindergartenreactnative.app",
-      "googleServicesFile": "./credentials/google-services.json"
-    },
+    "platforms": ["android", "web"],
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "googleServicesFile": "./credentials/google-services.json",
+      "googleServicesFile": "./android/app/google-services.json",
       "package": "com.kindergartenreactnative.app"
     },
     "plugins": [
@@ -35,16 +25,11 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#ffffff",
-          "sounds": []
+          "color": "#ffffff"
         }
       ],
       "expo-font"
     ],
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#ffffff"
-    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
