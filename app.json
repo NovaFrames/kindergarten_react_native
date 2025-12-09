@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kindergartenreactnative.App",
+      "bundleIdentifier": "com.kindergartenreactnative.app",
       "googleServicesFile": "./credentials/google-services.json"
     },
     "android": {
@@ -28,7 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./credentials/google-services.json",
-      "package": "com.kindergartenreactnative.App"
+      "package": "com.kindergartenreactnative.app"
     },
     "plugins": [
       [
