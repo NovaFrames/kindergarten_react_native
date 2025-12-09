@@ -12,11 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kindergartenreactnative.app",
@@ -39,7 +35,17 @@
           "sounds": []
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "manifestPlaceholders": {
+              "firebase_messaging_default_notification_color": "@color/white"
+            }
+          }
+        }
+      ]
     ],
     "notification": {
       "icon": "./assets/notification-icon.png",
