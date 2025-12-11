@@ -50,7 +50,13 @@
             "manifestApplicationAttributes": {
               "tools:replace": "android:resource"
             },
-            "extraProguardRules": ""
+            "manifestMetaData": [
+              {
+                "android:name": "com.google.firebase.messaging.default_notification_color",
+                "android:resource": "@color/notification_icon_color",
+                "tools:replace": "android:resource"
+              }
+            ]
           }
         }
       ],
