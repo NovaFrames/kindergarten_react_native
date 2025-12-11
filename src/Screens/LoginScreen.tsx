@@ -93,15 +93,12 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     try {
       setLoading(true);
-
       const response = await signInWithEmailAndPassword(
         auth,
         email.trim(),
         password
       );
-
       await savePushToken(response.user.uid);
-
       alert("Login Successful!");
     } catch (err: any) {
       alert(err.message);
@@ -110,6 +107,7 @@ const LoginScreen = () => {
     }
   };
 
+  
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F7FD" />
