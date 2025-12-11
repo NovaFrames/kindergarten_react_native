@@ -41,7 +41,7 @@ const BottomNavigation: React.FC = () => {
   }, [route.name]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.wrapper}>
       <View style={styles.navigationBar}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.name;
@@ -51,91 +51,85 @@ const BottomNavigation: React.FC = () => {
               key={tab.name}
               style={styles.tabButton}
               onPress={() => handleTabPress(tab.name)}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
-              <View style={styles.tabContent}>
-                <Icon
-                  name={tab.icon}
-                  size={24}
-                  color={isActive ? '#2196F3' : '#666'}
-                />
-                <Text style={[
-                  styles.tabLabel,
-                  isActive && styles.activeTabLabel
-                ]}>
-                  {tab.label}
-                </Text>
-                
-                {isActive && (
-                  <View style={styles.activeIndicator} />
-                )}
-              </View>
+              <View style={[
+                styles.activePill,
+                isActive && styles.activePillVisible
+              ]} />
+              <Icon
+                name={tab.icon}
+                size={22}
+                color={isActive ? '#0F172A' : '#9CA3AF'}
+              />
+              <Text style={[
+                styles.tabLabel,
+                isActive && styles.activeTabLabel
+              ]}>
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
-      
-      {/* Safe area padding for iOS */}
       <View style={styles.safeArea} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   navigationBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-    paddingBottom: 8,
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 8,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  tabContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 6,
+    borderRadius: 16,
     position: 'relative',
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 4,
-    color: '#666',
-    fontWeight: '500',
-  },
-  activeTabLabel: {
-    color: '#2196F3',
+    color: '#94A3B8',
     fontWeight: '600',
   },
-  activeIndicator: {
+  activeTabLabel: {
+    color: '#0F172A',
+  },
+  activePill: {
     position: 'absolute',
-    top: -8,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#2196F3',
+    top: 6,
+    bottom: 6,
+    left: 8,
+    right: 8,
+    borderRadius: 14,
+    backgroundColor: '#E0F2FE',
+    opacity: 0,
+  },
+  activePillVisible: {
+    opacity: 1,
   },
   safeArea: {
-    height: 20, // Increased for better safe area handling
-    backgroundColor: '#FFFFFF',
+    height: 16,
   },
 });
 

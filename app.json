@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MyFirstApp",
-    "slug": "MyFirstApp",
+    "name": "NovaSchool",
+    "slug": "novaschool",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -54,7 +54,7 @@
 
     "extra": {
       "eas": {
-        "projectId": "134e5571-d177-49ac-b418-dd167612a971"
+        "projectId": "0da40c94-804c-46b6-b6d8-ff8ed452d336"
       }
     }
   }
