@@ -28,11 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./credentials/google-services.json",
-      "package": "com.kindergartenreactnative.app",
-      "notification": {
-        "icon": "./assets/notification-icon.png",
-        "color": "#ffffff"
-      }
+      "package": "com.kindergartenreactnative.app"
     },
 
     "plugins": [
@@ -46,6 +42,11 @@
         }
       ]
     ],
+
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#ffffff"
+    },
 
     "web": {
       "favicon": "./assets/favicon.png"
