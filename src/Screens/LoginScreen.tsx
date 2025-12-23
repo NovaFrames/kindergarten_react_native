@@ -68,26 +68,44 @@ const LoginScreen = () => {
     }
   };
 
-  // Save Push Token in Firestore as an array
   const savePushToken = async (uid: string) => {
     try {
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
-      console.log("Expo Push Token:", token);
+      // Request notification permission (important)
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+
+      let finalStatus = existingStatus;
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        console.log("Notification permission not granted");
+        return;
+      }
+
+      // ✅ Get FCM token (standalone app)
+      const devicePushToken = await Notifications.getDevicePushTokenAsync();
+      const token = devicePushToken.data;
+
+      console.log("FCM Push Token:", token);
 
       // Store token as an array to support multiple devices
       await setDoc(
         doc(db, "fcmtokens", uid),
         {
           uid,
-          expoPushTokens: arrayUnion(token), // Add token to array without duplicates
+          fcmTokens: arrayUnion(token), // ✅ FCM tokens array
           updatedAt: serverTimestamp(),
+          platform: Platform.OS,
         },
         { merge: true }
       );
 
-      console.log("Token saved successfully to array");
+      console.log("FCM token saved successfully");
     } catch (error) {
-      console.log("Error saving token:", error);
+      console.log("Error saving FCM token:", error);
     }
   };
 
