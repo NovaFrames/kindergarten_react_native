@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../Service/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, arrayUnion, arrayRemove } from "firebase/firestore";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 
@@ -68,22 +68,24 @@ const LoginScreen = () => {
     }
   };
 
-  // Save Push Token in Firestore
+  // Save Push Token in Firestore as an array
   const savePushToken = async (uid: string) => {
     try {
       const token = (await Notifications.getExpoPushTokenAsync()).data;
       console.log("Expo Push Token:", token);
 
+      // Store token as an array to support multiple devices
       await setDoc(
         doc(db, "fcmtokens", uid),
         {
           uid,
-          expoPushToken: token,
-          platform: Platform.OS,
+          expoPushTokens: arrayUnion(token), // Add token to array without duplicates
           updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
+
+      console.log("Token saved successfully to array");
     } catch (error) {
       console.log("Error saving token:", error);
     }
@@ -107,7 +109,7 @@ const LoginScreen = () => {
     }
   };
 
-  
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F7FD" />
